@@ -4,6 +4,8 @@ import { Menu, X, LogOut, Settings, Sun, Moon } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
 
+import AUSTLogo from '@/assets/AUST.png';
+
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
@@ -28,11 +30,13 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 bg-brand-primary dark:bg-brand-accent rounded-lg flex items-center justify-center text-white font-bold group-hover:shadow-lg transition-shadow">
-              EU
-            </div>
+            <img
+              src={AUSTLogo}
+              alt="AUST Logo"
+              className="w-8 h-8 rounded-lg object-contain group-hover:shadow-lg transition-shadow"
+            />
             <span className="font-bold text-lg text-text-primary dark:text-text-dark-primary hidden sm:inline">
-              Encrypt
+              AUST
             </span>
           </Link>
 

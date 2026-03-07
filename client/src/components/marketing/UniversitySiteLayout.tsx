@@ -14,6 +14,8 @@ import {
 import { useTheme } from '@/context/ThemeContext'
 import Footer from '@/components/layout/Footer'
 
+import AUSTLogo from '@/assets/AUST.png';
+
 interface UniversitySiteLayoutProps {
   children: React.ReactNode
   title: string
@@ -138,7 +140,11 @@ export const UniversitySiteLayout: React.FC<UniversitySiteLayoutProps> = ({ chil
                 animate={{ rotate: [0, 8, -8, 0] }}
                 transition={{ repeat: Infinity, duration: 2.2 }}
               >
-                <span className="text-2xl font-bold text-amber-300">AU</span>
+                <img
+                  src={AUSTLogo}
+                  alt="AUST Logo"
+                  className="h-16 w-16 object-contain"
+                />
               </motion.div>
               <p className="text-sm uppercase tracking-[0.4em] text-slate-300">Loading Campus Experience</p>
             </div>
@@ -155,9 +161,11 @@ export const UniversitySiteLayout: React.FC<UniversitySiteLayoutProps> = ({ chil
       >
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-3" aria-label="AUST home">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-900 to-violet-600 text-sm font-bold text-white shadow-md">
-              AU
-            </div>
+            <img
+              src={AUSTLogo}
+              alt="AUST Logo"
+              className="h-10 w-10 rounded-2xl object-contain shadow-md"
+            />
             <div>
               <p className="font-heading text-sm uppercase tracking-[0.2em] text-blue-900 dark:text-blue-300">AUST</p>
               <p className="text-xs text-slate-600 dark:text-slate-300">University Management</p>
