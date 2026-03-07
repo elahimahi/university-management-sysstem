@@ -216,6 +216,13 @@ export const UniversitySiteLayout: React.FC<UniversitySiteLayoutProps> = ({ chil
           </nav>
 
           <div className="flex items-center gap-2">
+            <Link
+              to="/login"
+              className="hidden rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 sm:inline-flex"
+            >
+              Login
+            </Link>
+
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
@@ -255,6 +262,12 @@ export const UniversitySiteLayout: React.FC<UniversitySiteLayoutProps> = ({ chil
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
             >
+              <Link
+                to="/login"
+                className="mb-2 inline-flex w-full items-center justify-center rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800"
+              >
+                Login
+              </Link>
               <div className="flex flex-col gap-2">
                 {quickLinks.map((item) => (
                   <Link key={item.path} to={item.path} className="rounded-xl px-3 py-2 text-sm transition hover:bg-blue-50 dark:hover:bg-slate-800">
