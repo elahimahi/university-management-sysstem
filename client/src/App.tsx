@@ -7,6 +7,11 @@ import { ProtectedRoute } from '@/components'
 
 // Pages
 import HomePage from '@/pages/HomePage'
+import ProgramsPage from '@/pages/ProgramsPage'
+import AdmissionsPage from '@/pages/AdmissionsPage'
+import CampusLifePage from '@/pages/CampusLifePage'
+import FacultyPage from '@/pages/FacultyPage'
+import EventsPage from '@/pages/EventsPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import UnauthorizedPage from '@/pages/UnauthorizedPage'
@@ -48,6 +53,11 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<HomePage />} />
+              <Route path="/programs" element={<ProgramsPage />} />
+              <Route path="/admissions" element={<AdmissionsPage />} />
+              <Route path="/campus-life" element={<CampusLifePage />} />
+              <Route path="/faculty" element={<FacultyPage />} />
+              <Route path="/events" element={<EventsPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/unauthorized" element={<UnauthorizedPage />} />

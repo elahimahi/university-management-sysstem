@@ -2,38 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+
 @layer base {
   :root {
+    --uni-primary: #1e3a8a;
+    --uni-secondary: #7c3aed;
+    --uni-accent: #fbbf24;
+    --uni-bg-start: #f8fafc;
+    --uni-bg-end: #f1f5f9;
     @apply text-text-primary dark:text-text-dark-primary;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-surface-base dark:bg-surface-darkBase;
-    @apply transition-colors duration-200;
+    @apply transition-colors duration-200 antialiased;
+    font-family: 'Roboto', system-ui, -apple-system, Segoe UI, sans-serif;
+    background: linear-gradient(180deg, var(--uni-bg-start) 0%, var(--uni-bg-end) 100%);
+    min-height: 100vh;
   }
 
   h1 {
     @apply text-4xl font-bold leading-tight;
+    font-family: 'Poppins', system-ui, sans-serif;
   }
 
   h2 {
     @apply text-3xl font-bold leading-snug;
+    font-family: 'Poppins', system-ui, sans-serif;
   }
 
   h3 {
     @apply text-2xl font-semibold leading-snug;
+    font-family: 'Poppins', system-ui, sans-serif;
   }
 
   h4 {
     @apply text-xl font-semibold leading-snug;
+    font-family: 'Poppins', system-ui, sans-serif;
   }
 
   h5 {
     @apply text-lg font-semibold leading-snug;
+    font-family: 'Poppins', system-ui, sans-serif;
   }
 
   h6 {
     @apply text-base font-semibold leading-snug;
+    font-family: 'Poppins', system-ui, sans-serif;
+  }
+
+  .font-heading {
+    font-family: 'Poppins', system-ui, sans-serif;
   }
 }
 
@@ -48,6 +71,36 @@
     @apply transition-all duration-200 ease-in-out;
   }
 
+  .news-ticker {
+    animation: ticker 36s linear infinite;
+  }
+
+  .flip-card {
+    perspective: 1200px;
+  }
+
+  .flip-card-inner {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.7s;
+  }
+
+  .flip-card:hover .flip-card-inner {
+    transform: rotateY(180deg);
+  }
+
+  .flip-card-front,
+  .flip-card-back {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 1.5rem;
+  }
+
+  .flip-card-back {
+    transform: rotateY(180deg);
+  }
+
   /* Accessibility: Respect prefers-reduced-motion */
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -57,5 +110,19 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+
+    .news-ticker {
+      animation: none;
+      transform: translateX(0);
+    }
+  }
+}
+
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }

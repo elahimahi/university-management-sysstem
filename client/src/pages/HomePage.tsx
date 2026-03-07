@@ -1,419 +1,223 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import {
-  Users,
-  BookOpen,
-  BarChart3,
-  Clock,
-  GraduationCap,
-  CheckCircle,
-  ArrowRight,
-  Sparkles,
-  Zap,
-  Shield,
-  TrendingUp,
-  Brain,
-  MessageSquare,
-  Activity,
-  FileText,
-  Lock,
-  Lightbulb,
-} from 'lucide-react'
-import { PublicLayout } from '@/components/layout'
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  StatCard,
-} from '@/components/ui'
-import { useAuth } from '@/context/AuthContext'
+import { motion, useScroll, useTransform } from 'framer-motion'
+import { ArrowRight, BookOpen, Sparkles } from 'lucide-react'
+import { UniversitySiteLayout } from '@/components/marketing/UniversitySiteLayout'
+import { AnimatedCounter, GlassPanel, SectionHeading, SkeletonCard } from '@/components/marketing/shared'
+import { announcements, campusGallery, heroStats, programs } from '@/data/universitySiteData'
+
+const featured = programs.slice(0, 4)
 
 const HomePage: React.FC = () => {
-  const { isAuthenticated } = useAuth()
+  const { scrollY } = useScroll()
+  const ySlow = useTransform(scrollY, [0, 600], [0, -70])
+  const yFast = useTransform(scrollY, [0, 600], [0, -130])
 
-  const modules = [
-    {
-      icon: <GraduationCap className="w-8 h-8" />,
-      title: 'Departments',
-      description: 'Organize and manage academic departments efficiently',
-    },
-    {
-      icon: <Users className="w-8 h-8" />,
-      title: 'Students',
-      description: 'Track student information and enrollment history',
-    },
-    {
-      icon: <Users className="w-8 h-8" />,
-      title: 'Teachers',
-      description: 'Manage faculty assignments and profiles',
-    },
-    {
-      icon: <BookOpen className="w-8 h-8" />,
-      title: 'Courses',
-      description: 'Define and manage course curriculum',
-    },
-    {
-      icon: <Clock className="w-8 h-8" />,
-      title: 'Semesters',
-      description: 'Create and manage academic semesters',
-    },
-    {
-      icon: <BookOpen className="w-8 h-8" />,
-      title: 'Offerings',
-      description: 'Schedule and offer courses each semester',
-    },
-    {
-      icon: <Users className="w-8 h-8" />,
-      title: 'Enrollments',
-      description: 'Process student enrollments and validations',
-    },
-    {
-      icon: <BarChart3 className="w-8 h-8" />,
-      title: 'Results',
-      description: 'Record and publish student academic results',
-    },
-  ]
+  const [activeSlide, setActiveSlide] = useState(0)
+  const [galleryLoading, setGalleryLoading] = useState(true)
 
-  const roles = [
-    {
-      role: 'Admin',
-      description: 'Full system access, manage all entities',
-      permissions: ['Manage Departments', 'Manage Users', 'View Audit Logs'],
-    },
-    {
-      role: 'Teacher',
-      description: 'Manage courses and student results',
-      permissions: ['View Offerings', 'Submit Marks', 'View Enrollments'],
-    },
-    {
-      role: 'Student',
-      description: 'View courses and enrollments',
-      permissions: ['Enroll in Courses', 'View Results', 'Upload Documents'],
-    },
-  ]
+  useEffect(() => {
+    const slideInterval = window.setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % campusGallery.length)
+    }, 3800)
+
+    const skeletonTimer = window.setTimeout(() => {
+      setGalleryLoading(false)
+    }, 900)
+
+    return () => {
+      window.clearInterval(slideInterval)
+      window.clearTimeout(skeletonTimer)
+    }
+  }, [])
+
+  const tickerItems = useMemo(() => [...announcements, ...announcements], [])
 
   return (
-    <PublicLayout>
-      {/* Hero Section */}
-      <section className="py-16 md:py-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+    <UniversitySiteLayout title="Home">
+      <section className="relative isolate overflow-hidden px-4 pb-24 pt-20 sm:px-6 lg:px-8">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(30,58,138,0.25),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(124,58,237,0.22),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_65%,#e2e8f0_100%)] dark:bg-[radial-gradient(circle_at_20%_20%,rgba(30,58,138,0.45),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(124,58,237,0.3),transparent_30%),linear-gradient(180deg,#020617_0%,#0f172a_65%,#111827_100%)]" />
+
+        {/* Parallax decorative shapes are transform-only for smooth GPU animations. */}
+        <motion.div style={{ y: ySlow }} className="pointer-events-none absolute left-[-10%] top-8 -z-10 h-44 w-44 rounded-full bg-blue-600/20 blur-3xl" />
+        <motion.div style={{ y: yFast }} className="pointer-events-none absolute right-[2%] top-20 -z-10 h-60 w-60 rounded-full bg-violet-500/20 blur-3xl" />
+        <motion.div style={{ y: ySlow }} className="pointer-events-none absolute bottom-12 left-[35%] -z-10 h-32 w-32 rounded-full bg-amber-400/30 blur-2xl" />
+
+        <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold text-text-primary dark:text-text-dark-primary mb-6 leading-tight">
-              Secure Academic Management Platform
-            </h1>
-            <p className="text-lg text-text-secondary dark:text-text-dark-secondary mb-8">
-              Simplifying academic administration with transparency and precision. Manage departments,
-              students, teachers, courses, enrollments, and results in one unified platform.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              {isAuthenticated ? (
-                <Link to="/student/dashboard">
-                  <Button size="lg">
-                    Go to Dashboard <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-blue-800 backdrop-blur dark:border-slate-700 dark:bg-slate-900/70 dark:text-blue-300"
+            >
+              <Sparkles className="h-4 w-4" />
+              Next-Gen University Platform
+            </motion.p>
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="font-heading text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-slate-100"
+            >
+              Build Your Future In a
+              <span className="block bg-gradient-to-r from-blue-900 via-violet-700 to-amber-500 bg-clip-text text-transparent">
+                Connected Campus Ecosystem
+              </span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mt-6 max-w-2xl text-base text-slate-600 sm:text-lg dark:text-slate-300"
+            >
+              A modern, animated university experience that combines admissions, academics, faculty, and campus life into one intelligent digital hub.
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mt-8 flex flex-wrap gap-3"
+            >
+              <Link to="/admissions" className="inline-flex items-center gap-2 rounded-2xl bg-blue-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-800">
+                Apply Now
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link to="/programs" className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white/80 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:text-blue-900 dark:border-slate-600 dark:bg-slate-900/70 dark:text-slate-200">
+                Explore Programs
+              </Link>
+            </motion.div>
+          </div>
+
+          <GlassPanel className="relative overflow-hidden">
+            <div className="absolute right-4 top-4 rounded-full bg-amber-300/20 p-3 text-amber-600">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <p className="text-xs uppercase tracking-[0.25em] text-violet-600 dark:text-violet-300">Live Snapshot</p>
+            <h3 className="mt-2 font-heading text-2xl font-semibold">University At a Glance</h3>
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              {heroStats.map((stat) => (
+                <div key={stat.label} className="rounded-2xl border border-white/40 bg-white/80 p-4 dark:border-slate-700 dark:bg-slate-900/80">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
+                  <p className="mt-2 text-2xl font-semibold text-blue-900 dark:text-blue-300">
+                    <AnimatedCounter value={stat.value} suffix={stat.suffix} />
+                  </p>
+                </div>
+              ))}
+            </div>
+          </GlassPanel>
+        </div>
+      </section>
+
+      <section className="border-y border-slate-200/80 bg-white/70 py-4 backdrop-blur dark:border-slate-700/70 dark:bg-slate-900/60">
+        <div className="relative overflow-hidden">
+          <div className="news-ticker flex items-center gap-12 whitespace-nowrap px-4 text-sm text-slate-700 sm:px-6 lg:px-8 dark:text-slate-200">
+            {tickerItems.map((item, index) => (
+              <span key={`${item}-${index}`} className="inline-flex items-center gap-3">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="programs" className="mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+        <SectionHeading
+          eyebrow="Featured Programs"
+          title="Career-focused degrees designed for tomorrow"
+          description="Hover each program to reveal quick details, outcomes, and admission readiness snapshots."
+        />
+
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {featured.map((program) => (
+            <motion.article
+              key={program.id}
+              className="group relative overflow-hidden rounded-3xl border border-white/40 bg-white/70 p-6 backdrop-blur-xl transition dark:border-slate-700/70 dark:bg-slate-900/70"
+              whileHover={{ y: -8 }}
+            >
+              <p className="text-xs uppercase tracking-[0.2em] text-violet-600 dark:text-violet-300">{program.category}</p>
+              <h3 className="mt-3 font-heading text-xl font-semibold">{program.title}</h3>
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{program.overview}</p>
+              <div className="mt-5 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>{program.duration}</span>
+                <span>{program.mode}</span>
+              </div>
+              <div className="mt-6 max-h-0 overflow-hidden transition-all duration-300 group-hover:max-h-24">
+                <p className="text-xs font-semibold text-amber-600">{program.tuition}</p>
+                <Link to="/programs" className="mt-2 inline-flex text-xs font-semibold text-blue-900 dark:text-blue-300">
+                  See full details
                 </Link>
-              ) : (
-                <>
-                  <Link to="/register">
-                    <Button size="lg">
-                      Get Started <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </Link>
-                  <Link to="/login">
-                    <Button size="lg" variant="outline">
-                      Login
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="bg-gradient-to-br from-brand-primary to-brand-accent rounded-lg p-8 shadow-lg hidden md:block">
-            <div className="bg-white dark:bg-surface-darkCard rounded-lg p-6 shadow-lg">
-              <div className="space-y-4">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                <div className="grid grid-cols-2 gap-4 mt-6">
-                  <div className="h-16 bg-blue-50 dark:bg-blue-900 rounded-lg"></div>
-                  <div className="h-16 bg-teal-50 dark:bg-teal-900 rounded-lg"></div>
-                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Core Modules Section */}
-      <section className="py-16">
-        <h2 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary mb-12 text-center">
-          Core Modules
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {modules.map((module, idx) => (
-            <Card key={idx} hoverable>
-              <CardBody>
-                <div className="text-brand-primary dark:text-brand-accent-light mb-4">
-                  {module.icon}
-                </div>
-                <h3 className="font-semibold text-text-primary dark:text-text-dark-primary mb-2">
-                  {module.title}
-                </h3>
-                <p className="text-sm text-text-secondary dark:text-text-dark-secondary">
-                  {module.description}
-                </p>
-              </CardBody>
-            </Card>
+            </motion.article>
           ))}
         </div>
       </section>
 
-      {/* Powerful Features Section */}
-      <section className="py-20">
-        <div className="text-center mb-16">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center space-x-2 bg-brand-primary/10 dark:bg-brand-accent/10 px-6 py-2 rounded-full mb-4"
-          >
-            <Lightbulb className="w-5 h-5 text-brand-primary dark:text-brand-accent" />
-            <span className="text-sm font-semibold text-brand-primary dark:text-brand-accent">
-              ADVANCED FEATURES
-            </span>
-          </motion.div>
-          <h2 className="text-4xl md:text-5xl font-bold text-text-primary dark:text-text-dark-primary mb-6">
-            Powerful Tools for<br />Educational Excellence
-          </h2>
-          <p className="text-lg text-text-secondary dark:text-text-dark-secondary max-w-2xl mx-auto">
-            Built with educators and administrators in mind, featuring intelligent automation and comprehensive insights
-          </p>
-        </div>
+      <section id="campus" className="mx-auto w-full max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
+        <SectionHeading
+          eyebrow="Campus Life"
+          title="Stories from a vibrant student community"
+          description="A smooth auto-advancing carousel that highlights labs, events, sports, and cultural experiences."
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Feature 1 */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0 }}
-          >
-            <div className="h-full bg-gradient-to-br from-blue-50 to-blue-100 dark:from-surface-darkCard dark:to-blue-900/20 rounded-2xl p-8 border border-blue-200 dark:border-blue-800 hover:shadow-xl transition-all duration-300 group">
-              <div className="p-4 bg-blue-600 rounded-xl w-fit text-white mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Brain className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-text-primary dark:text-white mb-3">
-                Intelligent Analytics
-              </h3>
-              <p className="text-text-secondary dark:text-text-dark-secondary">
-                AI-powered insights into student performance, enrollment trends, and academic outcomes with predictive analytics
-              </p>
+        {galleryLoading ? (
+          <div className="grid gap-5 md:grid-cols-3">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        ) : (
+          <div className="relative overflow-hidden rounded-3xl border border-white/40 bg-white/70 p-4 shadow-lg backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/70">
+            <motion.img
+              key={campusGallery[activeSlide].id}
+              src={campusGallery[activeSlide].image}
+              alt={campusGallery[activeSlide].title}
+              className="h-[420px] w-full rounded-2xl object-cover"
+              initial={{ opacity: 0.35, scale: 1.04 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+              loading="lazy"
+            />
+            <div className="absolute inset-x-8 bottom-8 rounded-2xl bg-slate-950/60 p-5 text-white backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.2em] text-amber-300">{campusGallery[activeSlide].category}</p>
+              <h3 className="mt-2 font-heading text-2xl">{campusGallery[activeSlide].title}</h3>
+              <p className="mt-2 text-sm text-slate-200">{campusGallery[activeSlide].description}</p>
             </div>
-          </motion.div>
-
-          {/* Feature 2 */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <div className="h-full bg-gradient-to-br from-purple-50 to-purple-100 dark:from-surface-darkCard dark:to-purple-900/20 rounded-2xl p-8 border border-purple-200 dark:border-purple-800 hover:shadow-xl transition-all duration-300 group">
-              <div className="p-4 bg-purple-600 rounded-xl w-fit text-white mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Zap className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-text-primary dark:text-white mb-3">
-                Automated Grading
-              </h3>
-              <p className="text-text-secondary dark:text-text-dark-secondary">
-                Streamline assessment workflows with automated grading, result calculations, and instant GPA computations for all students
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Feature 3 */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <div className="h-full bg-gradient-to-br from-teal-50 to-teal-100 dark:from-surface-darkCard dark:to-teal-900/20 rounded-2xl p-8 border border-teal-200 dark:border-teal-800 hover:shadow-xl transition-all duration-300 group">
-              <div className="p-4 bg-teal-600 rounded-xl w-fit text-white mb-6 group-hover:scale-110 transition-transform duration-300">
-                <MessageSquare className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-text-primary dark:text-white mb-3">
-                Unified Communication
-              </h3>
-              <p className="text-text-secondary dark:text-text-dark-secondary">
-                Keep students, teachers, and administrators connected with integrated messaging, announcements, and notifications
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Feature 4 */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <div className="h-full bg-gradient-to-br from-amber-50 to-amber-100 dark:from-surface-darkCard dark:to-amber-900/20 rounded-2xl p-8 border border-amber-200 dark:border-amber-800 hover:shadow-xl transition-all duration-300 group">
-              <div className="p-4 bg-amber-600 rounded-xl w-fit text-white mb-6 group-hover:scale-110 transition-transform duration-300">
-                <BarChart3 className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-text-primary dark:text-white mb-3">
-                Comprehensive Reports
-              </h3>
-              <p className="text-text-secondary dark:text-text-dark-secondary">
-                Generate detailed academic reports, transcripts, and compliance documents with customizable templates and exports
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Feature 5 */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <div className="h-full bg-gradient-to-br from-rose-50 to-rose-100 dark:from-surface-darkCard dark:to-rose-900/20 rounded-2xl p-8 border border-rose-200 dark:border-rose-800 hover:shadow-xl transition-all duration-300 group">
-              <div className="p-4 bg-rose-600 rounded-xl w-fit text-white mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Activity className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-text-primary dark:text-white mb-3">
-                Real-time Monitoring
-              </h3>
-              <p className="text-text-secondary dark:text-text-dark-secondary">
-                Monitor enrollment capacity, attendance patterns, and academic progress with live dashboards and instant alerts
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Feature 6 */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-          >
-            <div className="h-full bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-surface-darkCard dark:to-indigo-900/20 rounded-2xl p-8 border border-indigo-200 dark:border-indigo-800 hover:shadow-xl transition-all duration-300 group">
-              <div className="p-4 bg-indigo-600 rounded-xl w-fit text-white mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Lock className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-text-primary dark:text-white mb-3">
-                Enterprise Security
-              </h3>
-              <p className="text-text-secondary dark:text-text-dark-secondary">
-                Military-grade encryption, role-based access control, audit logs, and compliance with educational data standards
-              </p>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Highlight Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="mt-20 bg-gradient-to-r from-brand-primary via-purple-600 to-brand-accent rounded-2xl p-12 text-white"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold mb-2">99.9%</div>
-              <p className="text-sm opacity-90">System Uptime</p>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">10M+</div>
-              <p className="text-sm opacity-90">Records Processed</p>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">500+</div>
-              <p className="text-sm opacity-90">Institutions</p>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">24/7</div>
-              <p className="text-sm opacity-90">Expert Support</p>
+            <div className="mt-4 flex justify-center gap-2">
+              {campusGallery.map((slide, idx) => (
+                <button
+                  key={slide.id}
+                  type="button"
+                  className={`h-2.5 rounded-full transition ${idx === activeSlide ? 'w-8 bg-blue-800 dark:bg-blue-300' : 'w-2.5 bg-slate-300 dark:bg-slate-600'}`}
+                  onClick={() => setActiveSlide(idx)}
+                  aria-label={`Show slide ${idx + 1}`}
+                />
+              ))}
             </div>
           </div>
-        </motion.div>
+        )}
       </section>
 
-      {/* Role-based Access Section */}
-      <section className="py-16">
-        <h2 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary mb-12 text-center">
-          Role-Based Access
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {roles.map((item, idx) => (
-            <Card key={idx}>
-              <CardHeader>
-                <h3 className="text-xl font-bold text-brand-primary dark:text-brand-accent-light">
-                  {item.role}
-                </h3>
-              </CardHeader>
-              <CardBody>
-                <p className="text-text-secondary dark:text-text-dark-secondary mb-4">
-                  {item.description}
+      <section id="impact" className="mx-auto w-full max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
+        <div className="rounded-3xl bg-gradient-to-r from-blue-900 via-violet-700 to-amber-500 p-8 text-white sm:p-12">
+          <SectionHeading
+            eyebrow="Impact Metrics"
+            title="Numbers that grow with every semester"
+            description="Student, faculty, and community impact counters animate on view for a dynamic dashboard feel."
+          />
+          <div className="grid gap-6 text-center sm:grid-cols-2 lg:grid-cols-4">
+            {heroStats.map((stat) => (
+              <div key={`impact-${stat.label}`} className="rounded-2xl bg-white/10 p-6">
+                <p className="text-xs uppercase tracking-[0.2em] text-blue-100">{stat.label}</p>
+                <p className="mt-3 text-4xl font-semibold">
+                  <AnimatedCounter value={stat.value} suffix={stat.suffix} />
                 </p>
-                <ul className="space-y-2">
-                  {item.permissions.map((perm, pidx) => (
-                    <li key={pidx} className="flex items-center space-x-2 text-sm text-text-primary dark:text-text-dark-primary">
-                      <CheckCircle className="w-4 h-4 text-semantic-success" />
-                      <span>{perm}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardBody>
-            </Card>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
-
-      {/* Impact Metrics */}
-      <section className="py-16">
-        <h2 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary mb-12 text-center">
-          Impact & Metrics
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            icon={<Users />}
-            label="Total Students"
-            value="1,250"
-            color="primary"
-          />
-          <StatCard
-            icon={<Users />}
-            label="Total Teachers"
-            value="145"
-            color="accent"
-          />
-          <StatCard
-            icon={<BookOpen />}
-            label="Total Courses"
-            value="320"
-            color="success"
-          />
-          <StatCard
-            icon={<Clock />}
-            label="Active Offerings"
-            value="89"
-            color="warning"
-          />
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      {!isAuthenticated && (
-        <section className="py-16 bg-brand-primary dark:bg-brand-accent rounded-lg text-white text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-lg mb-8 opacity-90">
-            Join thousands of educational institutions using our platform
-          </p>
-          <Link to="/register">
-            <Button variant="secondary" size="lg">
-              Create Free Account
-            </Button>
-          </Link>
-        </section>
-      )}
-    </PublicLayout>
+    </UniversitySiteLayout>
   )
 }
 
