@@ -101,11 +101,19 @@ const FacultyPage: React.FC = () => {
 
         <div className={`mt-8 ${viewMode === 'grid' ? 'grid gap-6 md:grid-cols-2 xl:grid-cols-3' : 'space-y-4'}`}>
           {filtered.map((member) => (
-            <article key={member.id} className={viewMode === 'grid' ? 'flip-card h-[300px]' : 'rounded-3xl border border-white/40 bg-white/80 p-5 backdrop-blur dark:border-slate-700 dark:bg-slate-900/80'}>
+            <article key={member.id} className={viewMode === 'grid' ? 'flip-card h-[360px]' : 'rounded-3xl border border-white/40 bg-white/80 p-5 backdrop-blur dark:border-slate-700 dark:bg-slate-900/80'}>
               {viewMode === 'grid' ? (
                 <div className="flip-card-inner h-full rounded-3xl border border-white/40 bg-white/80 dark:border-slate-700 dark:bg-slate-900/80">
                   <div className="flip-card-front flex h-full flex-col justify-between p-5">
                     <div>
+                      <div className="mb-4 overflow-hidden rounded-2xl">
+                        <img
+                          src={member.image}
+                          alt={member.name}
+                          loading="lazy"
+                          className="h-36 w-full object-cover"
+                        />
+                      </div>
                       <p className="text-xs uppercase tracking-[0.2em] text-violet-600 dark:text-violet-300">{member.department}</p>
                       <h3 className="mt-2 font-heading text-xl font-semibold">{member.name}</h3>
                       <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{member.role}</p>
@@ -114,6 +122,18 @@ const FacultyPage: React.FC = () => {
                   </div>
                   <div className="flip-card-back flex h-full flex-col justify-between p-5">
                     <div>
+                      <div className="mb-4 flex items-center gap-3">
+                        <img
+                          src={member.image}
+                          alt={member.name}
+                          loading="lazy"
+                          className="h-14 w-14 rounded-xl object-cover"
+                        />
+                        <div>
+                          <p className="font-semibold">{member.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{member.department}</p>
+                        </div>
+                      </div>
                       <p className="text-sm text-slate-600 dark:text-slate-300">{member.bio}</p>
                       <div className="mt-4 flex flex-wrap gap-2">
                         {member.expertise.map((skill) => (
@@ -125,7 +145,15 @@ const FacultyPage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div className="grid gap-4 sm:grid-cols-[120px_1fr_auto] sm:items-center">
+                  <div className="overflow-hidden rounded-2xl">
+                    <img
+                      src={member.image}
+                      alt={member.name}
+                      loading="lazy"
+                      className="h-28 w-full object-cover sm:h-24"
+                    />
+                  </div>
                   <div>
                     <p className="text-xs uppercase tracking-[0.2em] text-violet-600 dark:text-violet-300">{member.department}</p>
                     <h3 className="mt-1 font-heading text-xl font-semibold">{member.name}</h3>

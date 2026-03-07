@@ -14,6 +14,7 @@ export interface Program {
 export interface FacultyMember {
   id: string
   name: string
+  image: string
   department: string
   role: string
   email: string
@@ -188,6 +189,7 @@ export const facultyDirectory: FacultyMember[] = [
   {
     id: 'fac-1',
     name: 'Dr. Sarah Rahman',
+    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80',
     department: 'Computer Science',
     role: 'Professor & Program Director',
     email: 'sarah.rahman@aust.edu',
@@ -197,6 +199,7 @@ export const facultyDirectory: FacultyMember[] = [
   {
     id: 'fac-2',
     name: 'Prof. Imran Haque',
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80',
     department: 'Business Administration',
     role: 'Associate Professor',
     email: 'imran.haque@aust.edu',
@@ -206,6 +209,7 @@ export const facultyDirectory: FacultyMember[] = [
   {
     id: 'fac-3',
     name: 'Dr. Nabila Karim',
+    image: 'https://images.unsplash.com/photo-1580894908361-967195033215?auto=format&fit=crop&w=800&q=80',
     department: 'Public Health',
     role: 'Assistant Professor',
     email: 'nabila.karim@aust.edu',
@@ -215,6 +219,7 @@ export const facultyDirectory: FacultyMember[] = [
   {
     id: 'fac-4',
     name: 'Dr. Fahad Islam',
+    image: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=800&q=80',
     department: 'Electrical Engineering',
     role: 'Professor',
     email: 'fahad.islam@aust.edu',
@@ -224,6 +229,7 @@ export const facultyDirectory: FacultyMember[] = [
   {
     id: 'fac-5',
     name: 'Prof. Laila Ahmed',
+    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=80',
     department: 'Humanities',
     role: 'Senior Lecturer',
     email: 'laila.ahmed@aust.edu',
