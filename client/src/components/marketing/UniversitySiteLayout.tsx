@@ -12,6 +12,7 @@ import {
   ArrowUp,
 } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
+import Footer from '@/components/layout/Footer'
 
 interface UniversitySiteLayoutProps {
   children: React.ReactNode
@@ -294,38 +295,7 @@ export const UniversitySiteLayout: React.FC<UniversitySiteLayoutProps> = ({ chil
         </AnimatePresence>
       </main>
 
-      <footer className="mt-20 border-t border-slate-200 bg-white/60 py-12 backdrop-blur dark:border-slate-700 dark:bg-slate-900/60">
-        <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
-          <div>
-            <h3 className="font-heading text-xl text-blue-900 dark:text-blue-300">AUST University</h3>
-            <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">A modern academic ecosystem for learning, research, and impact.</p>
-          </div>
-          <div>
-            <p className="font-semibold">Academics</p>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-              <li><Link to="/programs">Programs</Link></li>
-              <li><Link to="/faculty">Faculty</Link></li>
-              <li><Link to="/events">Academic Calendar</Link></li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-semibold">Admissions</p>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-              <li><Link to="/admissions">Apply Now</Link></li>
-              <li><Link to="/campus-life">Visit Campus</Link></li>
-              <li><a href="#" aria-label="Scholarships">Scholarships</a></li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-semibold">Contact</p>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-              <li>admissions@aust.edu</li>
-              <li>+880-1000-123456</li>
-              <li>Dhaka, Bangladesh</li>
-            </ul>
-          </div>
-        </div>
-      </footer>
+      <Footer variant="marketing" />
 
       <AnimatePresence>
         {searchOpen && (
