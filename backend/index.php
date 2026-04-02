@@ -100,6 +100,8 @@ try {
             require_once 'student/get_course_assignments.php';
         } elseif ($action === 'submit-assignment' && $requestMethod === 'POST') {
             require_once 'student/submit_assignment.php';
+        } elseif ($action === 'get-fees-with-deadline' && $requestMethod === 'POST') {
+            require_once 'student/get_fees_with_deadline.php';
         }
     }
     // Courses Routes
@@ -170,6 +172,14 @@ try {
             require_once 'admin/get_sms_logs.php';
         } elseif ($action === 'payments' && $requestMethod === 'GET') {
             require_once 'admin/get_payments.php';
+        } elseif ($action === 'set-payment-deadline' && $requestMethod === 'POST') {
+            require_once 'admin/set_payment_deadline.php';
+        } elseif ($action === 'apply-penalties' && $requestMethod === 'POST') {
+            require_once 'admin/apply_penalties.php';
+        } elseif ($action === 'send-deadline-reminders' && $requestMethod === 'POST') {
+            require_once 'admin/send_deadline_reminders.php';
+        } elseif ($action === 'run-fee-batch-job' && $requestMethod === 'POST') {
+            require_once 'admin/run_fee_batch_job.php';
         }
     }
     // Payment Routes

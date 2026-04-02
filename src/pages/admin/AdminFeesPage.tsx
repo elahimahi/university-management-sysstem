@@ -23,16 +23,28 @@ interface Fee {
   total_paid: number;
 }
 
+interface Student {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
 interface CreateFeeForm {
   studentIds: number[];
   description: string;
   amount: string;
   dueDate: string;
+  paymentDeadline: string;
+  penaltyPercentage: string;
+  applyAfterDays: string;
+  feeType: 'all' | 'specific';
 }
 
 const AdminFeesPage: React.FC = () => {
   const { user, logout } = useAuth();
   const [fees, setFees] = useState<Fee[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -43,6 +55,10 @@ const AdminFeesPage: React.FC = () => {
     description: '',
     amount: '',
     dueDate: new Date().toISOString().split('T')[0],
+    paymentDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    penaltyPercentage: '5',
+    applyAfterDays: '7',
+    feeType: 'all',
   });
   const [processing, setProcessing] = useState(false);
 
@@ -53,11 +69,25 @@ const AdminFeesPage: React.FC = () => {
     { label: 'Analytics', icon: <BarChart2 size={20} />, href: '/admin/dashboard' },
   ];
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/Database-main/Database-main/backend';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     fetchAllFees();
   }, [statusFilter]);
+
+  const fetchStudents = async () => {
+    try {
+      const token = getAccessToken();
+      const response = await axios.get(`${API_BASE_URL}/users/all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Filter only students
+      const studentList = response.data.users?.filter((u: any) => u.role === 'student') || [];
+      setStudents(studentList);
+    } catch (err) {
+      console.error('Error fetching students:', err);
+    }
+  };
 
   const fetchAllFees = async () => {
     setLoading(true);
@@ -81,7 +111,17 @@ const AdminFeesPage: React.FC = () => {
     e.preventDefault();
 
     if (!createForm.description || !createForm.amount || !createForm.dueDate) {
-      toast.error('Please fill all fields');
+      toast.error('Please fill all required fields');
+      return;
+    }
+
+    if (createForm.feeType === 'specific' && createForm.studentIds.length === 0) {
+      toast.error('Please select a student');
+      return;
+    }
+
+    if (createForm.paymentDeadline && new Date(createForm.paymentDeadline) <= new Date()) {
+      toast.error('Payment deadline must be in the future');
       return;
     }
 
@@ -95,17 +135,24 @@ const AdminFeesPage: React.FC = () => {
           description: createForm.description,
           amount: parseFloat(createForm.amount),
           due_date: createForm.dueDate,
+          payment_deadline: createForm.paymentDeadline || null,
+          penalty_percentage: parseFloat(createForm.penaltyPercentage),
+          apply_after_days: parseInt(createForm.applyAfterDays),
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast.success(`Fee created: ${response.data.successful} student(s)`);
+      toast.success(`✓ Fee created for ${response.data.successful} student(s)`);
       setShowCreateModal(false);
       setCreateForm({
         studentIds: [],
         description: '',
         amount: '',
         dueDate: new Date().toISOString().split('T')[0],
+        paymentDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        penaltyPercentage: '5',
+        applyAfterDays: '7',
+        feeType: 'all',
       });
       fetchAllFees();
     } catch (err: any) {
@@ -128,6 +175,41 @@ const AdminFeesPage: React.FC = () => {
         return 'text-red-600 bg-red-50';
       default:
         return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  const handleApplyPenalties = async () => {
+    if (window.confirm('This will apply penalties to all overdue fees. Continue?')) {
+      try {
+        const token = getAccessToken();
+        const response = await axios.post(
+          `${API_BASE_URL}/admin/apply-penalties`,
+          { send_sms: true },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success(`Penalties applied: ${response.data.penalties_count} fees`);
+        fetchAllFees();
+      } catch (err: any) {
+        console.error('Error applying penalties:', err);
+        toast.error(err.response?.data?.error || 'Failed to apply penalties');
+      }
+    }
+  };
+
+  const handleSendReminders = async () => {
+    if (window.confirm('Send payment deadline reminders to all students with pending fees (24 hours before deadline)?')) {
+      try {
+        const token = getAccessToken();
+        const response = await axios.post(
+          `${API_BASE_URL}/admin/send-deadline-reminders`,
+          { hours_before_deadline: 24, status: 'pending' },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success(`Reminders sent: ${response.data.total_reminders_sent} SMS`);
+      } catch (err: any) {
+        console.error('Error sending reminders:', err);
+        toast.error(err.response?.data?.error || 'Failed to send reminders');
+      }
     }
   };
 
@@ -192,13 +274,30 @@ const AdminFeesPage: React.FC = () => {
               <DollarSign className="w-8 h-8 text-blue-500" />
               <h1 className="text-3xl font-bold">Fees Management</h1>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
-            >
-              <Plus size={20} />
-              Create Fee
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleSendReminders}
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
+              >
+                📧 Send Reminders
+              </button>
+              <button
+                onClick={handleApplyPenalties}
+                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
+              >
+                ⚠️ Apply Penalties
+              </button>
+              <button
+                onClick={() => {
+                  fetchStudents();
+                  setShowCreateModal(true);
+                }}
+                className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
+              >
+                <Plus size={20} />
+                Create Fee
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -273,15 +372,15 @@ const AdminFeesPage: React.FC = () => {
 
           {/* Create Fee Modal */}
           {showCreateModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white dark:bg-navy-800 rounded-xl shadow-2xl max-w-md w-full p-6"
+                className="bg-white dark:bg-navy-800 rounded-xl shadow-2xl max-w-2xl w-full p-6 m-4"
               >
                 <h2 className="text-2xl font-bold mb-4">Create New Fee</h2>
 
-                <form onSubmit={handleCreateFee} className="space-y-4">
+                <form onSubmit={handleCreateFee} className="space-y-4 max-h-[70vh] overflow-y-auto">
                   <div>
                     <label className="block text-sm font-semibold mb-2">Description</label>
                     <input
@@ -307,7 +406,47 @@ const AdminFeesPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold mb-2">Due Date</label>
+                    <label className="block text-sm font-semibold mb-2">Select Student <span className="text-red-500">*</span></label>
+                    {createForm.feeType === 'all' ? (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm text-blue-700 dark:text-blue-300">
+                        ✓ Fee will be created for <strong>ALL {students.length} students</strong>
+                      </div>
+                    ) : (
+                      <>
+                        <select
+                          value={createForm.studentIds[0] || ''}
+                          onChange={(e) => {
+                            const studentId = parseInt(e.target.value);
+                            setCreateForm({ ...createForm, studentIds: studentId ? [studentId] : [] });
+                          }}
+                          className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">-- Select a Student --</option>
+                          {students.map((student) => (
+                            <option key={student.id} value={student.id}>
+                              {student.first_name} {student.last_name} ({student.email})
+                            </option>
+                          ))}
+                        </select>
+                        {createForm.studentIds.length > 0 && (
+                          <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <p className="text-xs text-green-700 dark:text-green-300 font-semibold mb-2">Selected Student:</p>
+                            {students
+                              .filter((s) => createForm.studentIds.includes(s.id))
+                              .map((student) => (
+                                <div key={student.id} className="text-sm text-green-800 dark:text-green-200">
+                                  <p className="font-semibold">{student.first_name} {student.last_name}</p>
+                                  <p className="text-xs text-green-700 dark:text-green-400">{student.email}</p>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Original Due Date</label>
                     <input
                       type="date"
                       value={createForm.dueDate}
@@ -316,15 +455,95 @@ const AdminFeesPage: React.FC = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">For All Students or Specific Students?</label>
-                    <select className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      <option>All Students</option>
-                      <option>Specific Students (Future Feature)</option>
-                    </select>
+                  <div className="border-t border-gray-300 dark:border-gray-600 pt-4">
+                    <h3 className="font-semibold text-lg mb-4">Payment Deadline & Penalty Settings</h3>
+                    
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Payment Deadline (Window to Pay)</label>
+                      <input
+                        type="date"
+                        value={createForm.paymentDeadline || ''}
+                        onChange={(e) => setCreateForm({
+                          ...createForm,
+                          paymentDeadline: e.target.value
+                        })}
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Students must pay by this date to avoid penalties</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">Penalty % Rate</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          value={createForm.penaltyPercentage}
+                          onChange={(e) => setCreateForm({ ...createForm, penaltyPercentage: e.target.value })}
+                          className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Applied to original amount</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">Apply After (Days)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="365"
+                          value={createForm.applyAfterDays}
+                          onChange={(e) => setCreateForm({ ...createForm, applyAfterDays: e.target.value })}
+                          className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Days after deadline</p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="border-t border-gray-300 dark:border-gray-600 pt-4">
+                    <h3 className="font-semibold text-lg mb-4">Select Recipients</h3>
+                    <div className="space-y-3">
+                      <button
+                        type="button"
+                        onClick={() => setCreateForm({ ...createForm, feeType: 'all', studentIds: [] })}
+                        className={`w-full py-3 px-4 rounded-lg font-semibold transition-all border-2 text-left ${
+                          createForm.feeType === 'all'
+                            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
+                            : 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold">All Students</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Assign to every student ({students.length} total)</p>
+                          </div>
+                          <div className="text-lg">{createForm.feeType === 'all' ? '✓' : ''}</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCreateForm({ ...createForm, feeType: 'specific' })}
+                        className={`w-full py-3 px-4 rounded-lg font-semibold transition-all border-2 text-left ${
+                          createForm.feeType === 'specific'
+                            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
+                            : 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold">Specific Student</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Choose one student to assign fee</p>
+                          </div>
+                          <div className="text-lg">{createForm.feeType === 'specific' ? '✓' : ''}</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
                     <button
                       type="button"
                       onClick={() => setShowCreateModal(false)}

@@ -17,9 +17,13 @@ import NewsPage from '../pages/NewsPage';
 import EventsPage from '../pages/EventsPage';
 import AboutPage from '../pages/AboutPage';
 import FacultyCoursesPage from '../pages/faculty/FacultyCoursesPage';
+import FacultyCoursesManagementPage from '../pages/faculty/FacultyCoursesManagementPage';
 import FacultyStudentsPage from '../pages/faculty/FacultyStudentsPage';
+import FacultyStudentsManagementPage from '../pages/faculty/FacultyStudentsManagementPage';
 import FacultyAttendancePage from '../pages/faculty/FacultyAttendancePage';
+import FacultyAttendanceMarkingPage from '../pages/faculty/FacultyAttendanceMarkingPage';
 import FacultyGradesPage from '../pages/faculty/FacultyGradesPage';
+import FacultyGradesSubmissionPage from '../pages/faculty/FacultyGradesSubmissionPage';
 import SubmitGradePage from '../pages/faculty/SubmitGradePage';
 import FacultyReportsPage from '../pages/faculty/FacultyReportsPage';
 import StudentOverviewPage from '../pages/student/StudentOverviewPage';
@@ -31,6 +35,11 @@ import StudentFeesPage from '../pages/student/StudentFeesPage';
 
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminFeesPage from '../pages/admin/AdminFeesPage';
+import AdminVerificationPage from '../pages/admin/AdminVerificationPage';
+import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
+import UserManagementPage from '../pages/admin/UserManagementPage';
+import CoursesManagementPage from '../pages/admin/CoursesManagementPage';
+import FeesManagementPage from '../pages/admin/FeesManagementPage';
 
 const DashboardRedirect: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -82,6 +91,24 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute requireAuth={true}>
               <FacultyDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/faculty/my-courses"
+          element={
+            <ProtectedRoute requireAuth={true} allowedRoles={['faculty']}>
+              <FacultyCoursesManagementPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/faculty/my-students"
+          element={
+            <ProtectedRoute requireAuth={true} allowedRoles={['faculty']}>
+              <FacultyStudentsManagementPage />
             </ProtectedRoute>
           }
         />
@@ -146,7 +173,7 @@ const AppRoutes: React.FC = () => {
           path="/faculty/attendance"
           element={
             <ProtectedRoute requireAuth={true} allowedRoles={['faculty']}>
-              <FacultyAttendancePage />
+              <FacultyAttendanceMarkingPage />
             </ProtectedRoute>
           }
         />
@@ -155,6 +182,14 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute requireAuth={true} allowedRoles={['faculty']}>
               <FacultyGradesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/faculty/submit-grades"
+          element={
+            <ProtectedRoute requireAuth={true} allowedRoles={['faculty']}>
+              <FacultyGradesSubmissionPage />
             </ProtectedRoute>
           }
         />
@@ -231,7 +266,7 @@ const AppRoutes: React.FC = () => {
           path="/admin/dashboard"
           element={
             <ProtectedRoute requireAuth={true} allowedRoles={['admin']}>
-              <AdminDashboard />
+              <SuperAdminDashboard />
             </ProtectedRoute>
           }
         />
@@ -239,7 +274,31 @@ const AppRoutes: React.FC = () => {
           path="/admin/fees"
           element={
             <ProtectedRoute requireAuth={true} allowedRoles={['admin']}>
-              <AdminFeesPage />
+              <FeesManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/verify"
+          element={
+            <ProtectedRoute requireAuth={true} allowedRoles={['admin']}>
+              <AdminVerificationPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute requireAuth={true} allowedRoles={['admin']}>
+              <UserManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/courses"
+          element={
+            <ProtectedRoute requireAuth={true} allowedRoles={['admin']}>
+              <CoursesManagementPage />
             </ProtectedRoute>
           }
         />

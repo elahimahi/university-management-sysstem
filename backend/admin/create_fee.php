@@ -21,6 +21,9 @@ $student_ids = $data['student_ids'] ?? [];
 $description = $data['description'] ?? null;
 $amount = $data['amount'] ?? null;
 $due_date = $data['due_date'] ?? null;
+$payment_deadline = $data['payment_deadline'] ?? null;
+$penalty_percentage = $data['penalty_percentage'] ?? null;
+$apply_after_days = $data['apply_after_days'] ?? null;
 
 if (!$description || $amount === null || !$due_date) {
     http_response_code(400);
@@ -49,11 +52,28 @@ try {
 
     foreach ($student_ids as $student_id) {
         try {
+            // Insert fee with payment deadline
             $insert_stmt = $pdo->prepare('
-                INSERT INTO fees (student_id, description, amount, due_date, status)
-                VALUES (?, ?, ?, CAST(? AS DATE), ?)
+                INSERT INTO fees (student_id, description, amount, due_date, payment_deadline, status)
+                VALUES (?, ?, ?, CAST(? AS DATE), ?, ?)
             ');
-            $insert_stmt->execute([$student_id, $description, (float)$amount, $due_date, 'pending']);
+            $insert_stmt->execute([$student_id, $description, (float)$amount, $due_date, $payment_deadline, 'pending']);
+            $fee_id = $pdo->lastInsertId();
+
+            // If penalty settings provided, create penalty config
+            if ($fee_id && $penalty_percentage !== null) {
+                $penalty_stmt = $pdo->prepare('
+                    INSERT INTO penalty_config (fee_id, penalty_percentage, penalty_flat_amount, penalty_type, apply_after_days)
+                    VALUES (?, ?, 0, ?, ?)
+                ');
+                $penalty_stmt->execute([
+                    $fee_id,
+                    (float)$penalty_percentage,
+                    'percentage',
+                    (int)($apply_after_days ?? 7)
+                ]);
+            }
+
             $successful++;
         } catch (Exception $e) {
             $failed++;

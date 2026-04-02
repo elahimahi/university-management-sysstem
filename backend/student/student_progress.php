@@ -93,7 +93,7 @@ try {
                 FROM assignments a
                 JOIN enrollments e ON a.enrollment_id = e.id
                 JOIN courses c ON e.course_id = c.id
-                WHERE a.enrollment_id = ? AND c.faculty_id = ?
+                WHERE a.enrollment_id = ? AND c.instructor_id = ?
                 ORDER BY a.submitted_at DESC
             ");
             $stmt->execute([$enrollmentId, $userId]);

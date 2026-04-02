@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAccessToken } from '../../utils/auth.utils';
-import { CreditCard, AlertCircle } from 'lucide-react';
+import { CreditCard, AlertCircle, Clock, TrendingDown } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 interface Fee {
@@ -11,18 +11,28 @@ interface Fee {
   description: string;
   amount: number;
   due_date: string;
+  payment_deadline: string | null;
   status: string;
-  current_status: string;
-  payment_count: number;
-  total_paid: number;
+  paid_amount: number;
   remaining_amount: number;
+  hours_remaining: number | null;
+  payment_status_display: string;
+  penalty_applied: boolean;
+  penalty_amount: number;
+  penalty_percentage: number | null;
+  penalty_type: string | null;
+  apply_after_days: number | null;
 }
 
 interface FeeStats {
-  total_due: number;
+  total_fees_count: number;
+  total_amount: number;
   total_paid: number;
   total_pending: number;
-  overdue_count: number;
+  total_penalty: number;
+  urgent_fees: number;
+  overdue_fees: number;
+  message: string;
 }
 
 interface PaymentFormState {
@@ -48,7 +58,7 @@ const StudentFeesPage: React.FC = () => {
   });
   const [processing, setProcessing] = useState(false);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/Database-main/Database-main/backend';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     fetchStudentFees();
@@ -61,16 +71,28 @@ const StudentFeesPage: React.FC = () => {
     try {
       const token = getAccessToken();
       const response = await axios.post(
-        `${API_BASE_URL}/student/fees`,
+        `${API_BASE_URL}/student/get-fees-with-deadline`,
         { student_id: user.id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setFees(response.data.fees || []);
-      setStats(response.data.statistics || null);
+      setStats(response.data.summary || null);
       setError(null);
     } catch (err: any) {
       console.error('Error fetching fees:', err);
-      setError(err.response?.data?.error || 'Failed to load fees');
+      // Fallback to old endpoint if new one doesn't exist
+      try {
+        const token = getAccessToken();
+        const response = await axios.post(
+          `${API_BASE_URL}/student/fees`,
+          { student_id: user.id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setFees(response.data.fees || []);
+        setStats(response.data.statistics || null);
+      } catch (fallbackErr: any) {
+        setError(fallbackErr.response?.data?.error || 'Failed to load fees');
+      }
     } finally {
       setLoading(false);
     }
@@ -145,12 +167,13 @@ const StudentFeesPage: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'paid':
+      case 'Paid':
         return 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-700';
-      case 'pending':
-        return 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-700';
-      case 'overdue':
+      case 'Urgent - Less than 24 hours':
+      case 'Overdue - Pay Now!':
         return 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-700';
+      case 'Pending':
+        return 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-700';
       default:
         return 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700';
     }
@@ -158,15 +181,37 @@ const StudentFeesPage: React.FC = () => {
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'paid':
+      case 'Paid':
         return 'bg-green-500 text-white';
-      case 'pending':
-        return 'bg-yellow-500 text-white';
-      case 'overdue':
+      case 'Overdue - Pay Now!':
+        return 'bg-red-600 text-white animate-pulse';
+      case 'Urgent - Less than 24 hours':
         return 'bg-red-500 text-white';
+      case 'Pending':
+        return 'bg-yellow-500 text-white';
       default:
         return 'bg-gray-500 text-white';
     }
+  };
+
+  const formatDeadline = (deadline: string | null) => {
+    if (!deadline) return 'No deadline set';
+    return new Date(deadline).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getTimeRemainingText = (hoursRemaining: number | null) => {
+    if (hoursRemaining === null) return '';
+    if (hoursRemaining < 0) return 'Overdue!';
+    if (hoursRemaining === 0) return 'Due now!';
+    if (hoursRemaining < 24) return `${Math.ceil(hoursRemaining)} hours left`;
+    const days = Math.floor(hoursRemaining / 24);
+    return `${days} day${days > 1 ? 's' : ''} left`;
   };
 
   if (loading) {
@@ -189,7 +234,7 @@ const StudentFeesPage: React.FC = () => {
 
       <div className="flex items-center gap-3 mb-6">
         <CreditCard className="w-8 h-8 text-blue-500" />
-        <h1 className="text-3xl font-bold">Fees</h1>
+        <h1 className="text-3xl font-bold">Fees & Payments</h1>
       </div>
 
       {error && (
@@ -202,9 +247,20 @@ const StudentFeesPage: React.FC = () => {
         </div>
       )}
 
+      {/* Alert Messages */}
+      {stats && (stats.overdue_fees > 0 || stats.urgent_fees > 0) && (
+        <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-semibold text-orange-800 dark:text-orange-300">Payment Alert</h3>
+            <p className="text-orange-700 dark:text-orange-400 text-sm">{stats.message}</p>
+          </div>
+        </div>
+      )}
+
       {/* Fee Statistics */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -213,7 +269,7 @@ const StudentFeesPage: React.FC = () => {
           >
             <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Total Due</h3>
             <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">
-              ৳{stats.total_due?.toLocaleString() || 0}
+              ৳{stats.total_amount?.toLocaleString() || 0}
             </div>
           </motion.div>
 
@@ -247,8 +303,20 @@ const StudentFeesPage: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="rounded-xl shadow-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 p-6 border border-red-200 dark:border-red-700"
           >
-            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Overdue</h3>
-            <div className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{stats.overdue_count || 0}</div>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Urgent Fees</h3>
+            <div className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{stats.urgent_fees || 0}</div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="rounded-xl shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 p-6 border border-purple-200 dark:border-purple-700"
+          >
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Penalties</h3>
+            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-2">
+              ৳{stats.total_penalty?.toLocaleString() || 0}
+            </div>
           </motion.div>
         </div>
       )}
@@ -263,31 +331,69 @@ const StudentFeesPage: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className={`rounded-xl shadow-lg p-6 border ${getStatusColor(fee.current_status)}`}
+              className={`rounded-xl shadow-lg p-6 border ${getStatusColor(fee.payment_status_display)}`}
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-xl font-bold">{fee.description}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Due: {new Date(fee.due_date).toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Original Due: {new Date(fee.due_date).toLocaleDateString()}</p>
                 </div>
-                <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusBadgeColor(fee.current_status)}`}>
-                  {fee.current_status.charAt(0).toUpperCase() + fee.current_status.slice(1)}
+                <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusBadgeColor(fee.payment_status_display)}`}>
+                  {fee.payment_status_display}
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 mb-4">
+              {/* Payment Deadline Section */}
+              {fee.payment_deadline && (
+                <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Payment Deadline
+                    </p>
+                    <p className="font-semibold">{formatDeadline(fee.payment_deadline)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Time Remaining</p>
+                    <p className={`font-semibold ${fee.hours_remaining !== null && fee.hours_remaining < 24 ? 'text-red-600' : 'text-green-600'}`}>
+                      {getTimeRemainingText(fee.hours_remaining)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Penalty Information */}
+              {fee.penalty_applied && (
+                <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <TrendingDown className="w-4 h-4" />
+                      Penalty Applied
+                    </p>
+                    <p className="font-semibold text-red-600">৳{fee.penalty_amount?.toLocaleString()}</p>
+                  </div>
+                  {fee.penalty_percentage && (
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Penalty Rate</p>
+                      <p className="font-semibold">{fee.penalty_percentage}% {fee.penalty_type}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total Amount</p>
-                  <p className="text-2xl font-bold">৳{fee.amount.toLocaleString()}</p>
+                  <p className="text-2xl font-bold">৳{fee.amount?.toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Paid</p>
-                  <p className="text-2xl font-bold text-green-600">৳{fee.total_paid?.toLocaleString() || 0}</p>
+                  <p className="text-2xl font-bold text-green-600">৳{fee.paid_amount?.toLocaleString() || 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Remaining</p>
                   <p className={`text-2xl font-bold ${fee.remaining_amount > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                    ৳{fee.remaining_amount.toLocaleString()}
+                    ৳{fee.remaining_amount?.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -298,7 +404,7 @@ const StudentFeesPage: React.FC = () => {
                   className={`h-3 rounded-full transition-all ${
                     fee.status === 'paid' ? 'bg-green-500' : fee.remaining_amount > 0 ? 'bg-orange-500' : 'bg-green-500'
                   }`}
-                  style={{ width: `${Math.min((fee.total_paid / fee.amount) * 100, 100)}%` }}
+                  style={{ width: `${Math.min((fee.paid_amount / fee.amount) * 100, 100)}%` }}
                 />
               </div>
 
@@ -334,9 +440,25 @@ const StudentFeesPage: React.FC = () => {
           >
             <h2 className="text-2xl font-bold mb-4">Pay "{selectedFee.description}"</h2>
 
+            {selectedFee.payment_deadline && (
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Payment Deadline
+                </p>
+                <p className="font-semibold">{formatDeadline(selectedFee.payment_deadline)}</p>
+                <p className="text-sm mt-1 font-semibold text-orange-600">
+                  {getTimeRemainingText(selectedFee.hours_remaining)}
+                </p>
+              </div>
+            )}
+
             <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <p className="text-sm text-gray-600 dark:text-gray-400">Remaining Amount</p>
-              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">৳{selectedFee.remaining_amount.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">৳{selectedFee.remaining_amount?.toLocaleString()}</p>
+              {selectedFee.penalty_applied && (
+                <p className="text-sm text-red-600 mt-2">+ ৳{selectedFee.penalty_amount?.toLocaleString()} penalty</p>
+              )}
             </div>
 
             <form onSubmit={handlePaymentSubmit} className="space-y-4">

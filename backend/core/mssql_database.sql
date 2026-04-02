@@ -11,9 +11,13 @@ CREATE TABLE users (
     role VARCHAR(20) DEFAULT 'student' CHECK (role IN ('student', 'faculty', 'admin')),
     phone VARCHAR(20) DEFAULT NULL,
     profile_picture VARCHAR(255) DEFAULT NULL,
+    approval_status VARCHAR(20) DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'rejected')),
+    approved_by INT DEFAULT NULL,
+    rejection_reason VARCHAR(255) DEFAULT NULL,
     is_email_verified BIT DEFAULT 0,
     created_at DATETIME2 DEFAULT GETDATE(),
-    updated_at DATETIME2 DEFAULT GETDATE()
+    updated_at DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT FK_Users_ApprovedBy FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- 2. Courses Table
