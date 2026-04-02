@@ -1,0 +1,95 @@
+<?php
+require_once __DIR__ . '/../core/db_connect.php';
+header('Content-Type: application/json');
+
+try {
+    // Get all payments with pagination
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+    $offset = ($page - 1) * $limit;
+
+    // Get total count
+    $count_stmt = $pdo->query('SELECT COUNT(*) as total FROM payments');
+    $total = $count_stmt->fetch()['total'];
+
+    // Get payments with student info
+    $stmt = $pdo->prepare('
+        SELECT
+            p.id,
+            p.fee_id,
+            p.amount_paid,
+            p.payment_date,
+            p.payment_method,
+            f.description,
+            f.amount as fee_amount,
+            u.first_name,
+            u.last_name,
+            u.email
+        FROM payments p
+        JOIN fees f ON p.fee_id = f.id
+        JOIN users u ON f.student_id = u.id
+        ORDER BY p.payment_date DESC
+        OFFSET ? ROWS
+        FETCH NEXT ? ROWS ONLY
+    ');
+    $stmt->bindParam(1, $offset, PDO::PARAM_INT);
+    $stmt->bindParam(2, $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    $payments = $stmt->fetchAll();
+
+    // Format payments data
+    $formattedPayments = array_map(function($payment) {
+        return [
+            'id' => $payment['id'],
+            'fee_id' => $payment['fee_id'],
+            'amount_paid' => (float)$payment['amount_paid'],
+            'payment_date' => $payment['payment_date'],
+            'payment_method' => $payment['payment_method'],
+            'description' => $payment['description'],
+            'fee_amount' => (float)$payment['fee_amount'],
+            'student_name' => $payment['first_name'] . ' ' . $payment['last_name'],
+            'email' => $payment['email']
+        ];
+    }, $payments);
+
+    // Get statistics
+    $stats_stmt = $pdo->query("
+        SELECT
+            COUNT(*) as total_payments,
+            SUM(amount_paid) as total_amount,
+            SUM(CASE WHEN payment_method = 'bkash' THEN 1 ELSE 0 END) as bkash_payments,
+            SUM(CASE WHEN payment_method = 'nagad' THEN 1 ELSE 0 END) as nagad_payments,
+            SUM(CASE WHEN payment_method = 'rocket' THEN 1 ELSE 0 END) as rocket_payments,
+            SUM(CASE WHEN payment_method = 'card' THEN 1 ELSE 0 END) as card_payments
+        FROM payments
+    ");
+    $stats = $stats_stmt->fetch();
+
+    echo json_encode([
+        'success' => true,
+        'payments' => $formattedPayments,
+        'stats' => [
+            'total_payments' => (int)$stats['total_payments'],
+            'total_amount' => (float)($stats['total_amount'] ?? 0),
+            'bkash_payments' => (int)$stats['bkash_payments'],
+            'nagad_payments' => (int)$stats['nagad_payments'],
+            'rocket_payments' => (int)$stats['rocket_payments'],
+            'card_payments' => (int)$stats['card_payments']
+        ],
+        'pagination' => [
+            'page' => $page,
+            'limit' => $limit,
+            'total' => $total,
+            'pages' => ceil($total / $limit)
+        ]
+    ]);
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Failed to fetch payments',
+        'details' => $e->getMessage()
+    ]);
+}
+?>

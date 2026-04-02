@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Student Assignments Fix</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container { 
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 { color: #333; margin-top: 0; }
+        .status { padding: 15px; border-radius: 6px; margin: 15px 0; font-weight: 600; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .loading { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+        .data { background: #f8f9fa; padding: 15px; border-radius: 6px; margin-top: 15px; overflow-x: auto; }
+        pre { margin: 0; font-size: 12px; }
+        .button { 
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+        }
+        .button:hover { background: #764ba2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ Student Assignments API Test</h1>
+        
+        <div id="status" class="status loading">
+            Testing backend: GET /student/assignments...
+        </div>
+        
+        <button class="button" onclick="testAPI()">🔄 Retry</button>
+        
+        <div id="data" style="display:none;">
+            <h2>Response Data</h2>
+            <div class="data">
+                <pre id="response"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const statusEl = document.getElementById('status');
+            const dataEl = document.getElementById('data');
+            
+            statusEl.textContent = '⏳ Testing...';
+            statusEl.className = 'status loading';
+            dataEl.style.display = 'none';
+            
+            try {
+                // Test with mock token
+                const token = generateMockToken();
+                
+                const response = await fetch(
+                    './backend/debug/direct-test.php',
+                    {
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    statusEl.textContent = `✅ SUCCESS! Found ${data.total || 0} assignments`;
+                    statusEl.className = 'status success';
+                } else {
+                    statusEl.textContent = `❌ Error: ${data.message || 'Unknown error'}`;
+                    statusEl.className = 'status error';
+                }
+                
+                document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+                dataEl.style.display = 'block';
+                
+            } catch (error) {
+                statusEl.textContent = `❌ Network Error: ${error.message}`;
+                statusEl.className = 'status error';
+                document.getElementById('response').textContent = error.stack;
+                dataEl.style.display = 'block';
+            }
+        }
+        
+        function generateMockToken() {
+            const now = Math.floor(Date.now() / 1000);
+            const header = btoa(JSON.stringify({alg: 'HS256', typ: 'JWT'}));
+            const payload = btoa(JSON.stringify({
+                sub: 1,
+                user_id: 1,
+                iat: now,
+                exp: now + 3600
+            }));
+            const sig = btoa('mock_signature');
+            return `${header}.${payload}.${sig}`;
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', testAPI);
+    </script>
+</body>
+</html>

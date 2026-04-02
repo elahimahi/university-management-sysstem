@@ -1,0 +1,29 @@
+[2026-03-17 15:24:23] [ERROR] Could not fetch student phone: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'phone'.
+[2026-03-17 15:24:23] [PAYMENT_CONFIRMATION] Sending SMS to: 01993259223
+[2026-03-17 15:24:23] [ATTEMPT] To: 01993259223 | Type: payment_confirmation
+[2026-03-17 15:24:23] [MESSAGE] Encrypt University: Payment Confirmed!
+Dear New User,
+Your payment of ৳400.00 via BKASH has been successfully processed.
+Status: FULLY PAID ✓
+Contact: support@encryptuniversity.edu
+[2026-03-17 15:24:23] [DB_ERROR] Could not log SMS: SQLSTATE[42S02]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid object name 'sms_logs'.
+[2026-03-17 15:24:23] [SUCCESS] SMS sent to 01993259223 for payment_confirmation
+[2026-03-17 15:27:47] [ERROR] Could not fetch student phone: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'phone'.
+[2026-03-17 15:27:47] [PAYMENT_CONFIRMATION] Sending SMS to: 01993259223
+[2026-03-17 15:27:47] [ATTEMPT] To: 01993259223 | Provider: test
+[2026-03-17 15:27:47] [SUCCESS] SMS sent via test to 01993259223
+[2026-03-17 15:29:18] [ERROR] Could not fetch student phone: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'phone'.
+[2026-03-21 18:55:37] [ERROR] Could not fetch student phone: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'phone'.
+[2026-03-22 20:26:39] [ERROR] Could not fetch student phone: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'phone'.
+[2026-03-22 20:40:12] [PAYMENT_CONFIRMATION] Sending SMS to: +8801999999999
+[2026-03-22 20:40:12] [ATTEMPT] To: +8801999999999 | Provider: test
+[2026-03-22 20:40:12] [SUCCESS] SMS sent via test to +8801999999999
+[2026-03-22 20:40:16] [PAYMENT_CONFIRMATION] Sending SMS to: +8801999999999
+[2026-03-22 20:40:16] [ATTEMPT] To: +8801999999999 | Provider: test
+[2026-03-22 20:40:16] [SUCCESS] SMS sent via test to +8801999999999
+[2026-03-22 20:44:09] [PAYMENT_CONFIRMATION] Sending SMS to: +8801999999999
+[2026-03-22 20:44:09] [ATTEMPT] To: +8801999999999 | Provider: test
+[2026-03-22 20:44:09] [SUCCESS] SMS sent via test to +8801999999999
+[2026-03-22 20:45:29] [PAYMENT_CONFIRMATION] Sending SMS to: +8801999999999
+[2026-03-22 20:45:29] [ATTEMPT] To: +8801999999999 | Provider: test
+[2026-03-22 20:45:29] [SUCCESS] SMS sent via test to +8801999999999
