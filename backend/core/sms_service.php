@@ -13,8 +13,22 @@ class SMSService {
     private $log_file;
     private $provider;
 
-    public function __construct($pdo) {
-        $this->pdo = $pdo;
+    public function __construct($pdo = null) {
+        // Try to get PDO from parameter or global scope
+        if (!$pdo) {
+            // Try to get from global scope if already connected
+            global $pdo;
+            if (isset($pdo)) {
+                $this->pdo = $pdo;
+            } else {
+                // Require db_connect if not already loaded
+                require_once __DIR__ . '/db_connect.php';
+                $this->pdo = $pdo;
+            }
+        } else {
+            $this->pdo = $pdo;
+        }
+        
         $this->log_file = SMS_LOG_FILE;
         $this->provider = SMS_PROVIDER;
     }
@@ -60,13 +74,20 @@ class SMSService {
         $message .= "Please pay by the due date to avoid penalties.\n";
         $message .= "Contact: support@encryptuniversity.edu";
 
-        return $this->sendSMS($phone_number, $message, 'pending_reminder');
+        return $this->sendSMSMessage($phone_number, $message, 'pending_reminder');
+    }
+
+    /**
+     * Public method to send SMS with student ID tracking
+     */
+    public function sendSMS($phone_number, $message, $sms_type, $student_id = null) {
+        return $this->sendSMSMessage($phone_number, $message, $sms_type, $student_id);
     }
 
     /**
      * Core SMS sending function with multiple provider support
      */
-    private function sendSMS($phone_number, $message, $sms_type) {
+    private function sendSMSMessage($phone_number, $message, $sms_type, $student_id = null) {
         try {
             $this->log("[ATTEMPT] To: $phone_number | Provider: " . $this->provider);
             
@@ -94,6 +115,7 @@ class SMSService {
             // Store SMS record in database
             if ($result['success']) {
                 $this->logSMSRecord([
+                    'student_id' => $student_id,
                     'phone' => $phone_number,
                     'message' => $message,
                     'type' => $sms_type,
@@ -277,17 +299,19 @@ class SMSService {
             $this->ensureSMSTableExists();
             
             $stmt = $this->pdo->prepare('
-                INSERT INTO sms_logs (phone_number, message, sms_type, sent_at, status, provider)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO sms_logs (student_id, phone_number, message, sms_type, sent_at, status, provider, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ');
             
             $stmt->execute([
+                $record['student_id'] ?? null,
                 $record['phone'],
                 $record['message'],
                 $record['type'],
                 $record['timestamp'],
                 $record['status'],
-                $record['provider'] ?? 'test'
+                $record['provider'] ?? 'test',
+                date('Y-m-d H:i:s')
             ]);
             
             return true;

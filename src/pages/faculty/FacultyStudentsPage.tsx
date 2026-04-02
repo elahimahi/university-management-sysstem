@@ -23,7 +23,7 @@ const FacultyStudentsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [groupedByStudent, setGroupedByStudent] = useState<Record<string, any>>({});
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/Database-main/Database-main/backend';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     const fetchStudents = async () => {

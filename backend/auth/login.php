@@ -51,8 +51,10 @@ try {
         // Accept role from login request if provided (faculty/admin/student)
         $role = isset($data['role']) && in_array($data['role'], ['student', 'faculty', 'admin']) ? $data['role'] : 'student';
         $isEmailVerified = 1;
-        $insertStmt = $pdo->prepare("INSERT INTO users (email, password, first_name, last_name, role, is_email_verified) VALUES (?, ?, ?, ?, ?, ?)");
-        $insertStmt->execute([$email, $hashedPassword, $firstName, $lastName, $role, $isEmailVerified]);
+        // Auto-approve if registering as admin, otherwise set to pending
+        $approvalStatus = ($role === 'admin') ? 'approved' : 'pending';
+        $insertStmt = $pdo->prepare("INSERT INTO users (email, password, first_name, last_name, role, is_email_verified, approval_status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $insertStmt->execute([$email, $hashedPassword, $firstName, $lastName, $role, $isEmailVerified, $approvalStatus]);
         // Fetch the newly created user
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
@@ -66,6 +68,40 @@ try {
             echo json_encode(['message' => 'Invalid role for this user']);
             exit;
         }
+        
+        // CHECK IF USER IS APPROVED (Super Admin System)
+        // Auto-approve if approval_status is NULL (old users), or check if explicitly approved
+        $approvalStatus = $user['approval_status'] ?? 'approved';
+        
+        if ($approvalStatus === 'rejected') {
+            http_response_code(403);
+            echo json_encode([
+                'message' => 'Your registration has been rejected',
+                'reason' => $user['rejection_reason'] ?? 'Not specified',
+                'approval_status' => 'rejected'
+            ]);
+            exit;
+        }
+        
+        if ($approvalStatus === 'pending') {
+            http_response_code(403);
+            echo json_encode([
+                'message' => 'Your registration is waiting for admin approval',
+                'approval_status' => 'pending'
+            ]);
+            exit;
+        }
+        
+        // If approval_status was NULL, update it to 'approved' (auto-approve old users)
+        if ($user['approval_status'] === NULL) {
+            try {
+                $updateStmt = $pdo->prepare("UPDATE users SET approval_status = 'approved' WHERE id = ?");
+                $updateStmt->execute([$user['id']]);
+            } catch (Exception $e) {
+                // Continue even if update fails
+            }
+        }
+        
         $token = generateToken($user['id']);
         echo json_encode([
             'user' => [
@@ -75,6 +111,7 @@ try {
                 'last_name' => $user['last_name'],
                 'role' => $user['role'],
                 'is_email_verified' => (bool)$user['is_email_verified'],
+                'approval_status' => 'approved',
                 'createdAt' => $user['created_at'],
                 'updatedAt' => $user['updated_at']
             ],

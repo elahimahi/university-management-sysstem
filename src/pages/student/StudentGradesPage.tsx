@@ -27,7 +27,7 @@ const StudentGradesPage: React.FC = () => {
     const fetchGradesData = async () => {
       try {
         const token = getAccessToken();
-        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/Database-main/Database-main/backend';
+        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
         
         const response = await axios.get(`${API_BASE_URL}/student/student_stats.php`, {
           headers: { Authorization: `Bearer ${token}` }

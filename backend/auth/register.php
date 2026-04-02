@@ -32,30 +32,60 @@ if (!$email || !$password || !$firstName || !$lastName) {
     exit;
 }
 
+// CHECK: Only allow ONE admin registration
+if ($role === 'admin') {
+    // Check if admin already exists
+    $adminCheckStmt = $pdo->prepare("SELECT COUNT(*) as admin_count FROM users WHERE role = 'admin'");
+    $adminCheckStmt->execute();
+    $result = $adminCheckStmt->fetch();
+    
+    if ($result['admin_count'] > 0) {
+        http_response_code(403);
+        echo json_encode([
+            'message' => 'Admin account already exists',
+            'error' => 'Only one admin can be registered in the system'
+        ]);
+        exit;
+    }
+}
+
 $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
 try {
-    $stmt = $pdo->prepare("INSERT INTO users (email, password, first_name, last_name, role) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([$email, $hashedPassword, $firstName, $lastName, $role]);
+    // For admin registrations, automatically approve
+    $approvalStatus = ($role === 'admin') ? 'approved' : 'pending';
+    
+    $stmt = $pdo->prepare("INSERT INTO users (email, password, first_name, last_name, role, approval_status) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$email, $hashedPassword, $firstName, $lastName, $role, $approvalStatus]);
     
     $userId = $pdo->lastInsertId();
     
     http_response_code(201);
-    $token = generateToken($userId);
+    
+    // Only generate token if user is approved (admins)
+    if ($approvalStatus === 'approved') {
+        $token = generateToken($userId);
+        $tokens = [
+            'accessToken' => $token,
+            'refreshToken' => $token,
+            'expiresIn' => 3600
+        ];
+    } else {
+        $tokens = null;
+    }
+    
     echo json_encode([
-        'message' => 'User registered successfully',
+        'message' => 'User registered successfully. Awaiting admin approval.',
         'user' => [
             'id' => $userId,
             'email' => $email,
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'role' => $role
+            'role' => $role,
+            'approval_status' => $approvalStatus
         ],
-        'tokens' => [
-            'accessToken' => $token,
-            'refreshToken' => $token, // Simplified
-            'expiresIn' => 3600
-        ]
+        'tokens' => $tokens,
+        'status' => $approvalStatus
     ]);
 } catch (PDOException $e) {
     if ($e->getCode() == 23000) {
