@@ -1,0 +1,71 @@
+<?php
+/**
+ * Generate a test token for debugging
+ */
+
+function generateTestToken($userId) {
+    $header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+    $payload = base64_encode(json_encode([
+        'sub' => $userId,
+        'user_id' => $userId,
+        'iat' => time(),
+        'exp' => time() + 3600
+    ]));
+    $signature = base64_encode('mock_signature');
+    return "$header.$payload.$signature";
+}
+
+$token = generateTestToken(1);
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Student Assignments API</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+        .container { background: white; padding: 20px; border-radius: 6px; max-width: 800px; }
+        pre { background: #f9f9f9; padding: 10px; border-left: 4px solid #2563eb; overflow-x: auto; }
+        h2 { color: #333; }
+        .token { background: #fef3c7; padding: 10px; border-radius: 4px; font-size: 12px; word-break: break-all; }
+        .button { background: #2563eb; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        .button:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Student Assignments API Tester</h1>
+        
+        <h2>Test Token</h2>
+        <div class="token" id="token"><?php echo $token; ?></div>
+        
+        <h2>Test Request</h2>
+        <pre>GET /student/assignments
+Authorization: Bearer <?php echo $token; ?></pre>
+        
+        <button class="button" onclick="testAPI()">Test API Call</button>
+        
+        <h2>Response</h2>
+        <pre id="response">Loading...</pre>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const token = document.getElementById('token').textContent;
+            const response = await fetch(
+                './student/assignments', 
+                {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            const data = await response.json();
+            document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', testAPI);
+    </script>
+</body>
+</html>

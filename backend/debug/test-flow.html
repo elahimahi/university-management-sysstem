@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment Submission Flow Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .section h2 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        button:hover { background: #764ba2; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .code-block {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        .success { color: #22c55e; font-weight: bold; }
+        .error { color: #ef4444; font-weight: bold; }
+        .loading { color: #f59e0b; font-weight: bold; }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .table th, .table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .table th {
+            background: #667eea;
+            color: white;
+        }
+        .table tr:nth-child(even) { background: #f9f9f9; }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge.submitted { background: #22c55e; color: white; }
+        .badge.not-submitted { background: #f59e0b; color: white; }
+        .badge.overdue { background: #ef4444; color: white; }
+        .badge.pending { background: #3b82f6; color: white; }
+        .badge.graded { background: #10b981; color: white; }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        select, input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: #f0f4ff;
+            margin: 0 5px;
+            border-radius: 5px;
+            font-weight: bold;
+            border: 2px solid transparent;
+        }
+        .step.active {
+            background: #667eea;
+            color: white;
+            border: 2px solid #764ba2;
+        }
+        .step.completed {
+            background: #22c55e;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 Assignment Submission Flow - Complete Test</h1>
+        
+        <div class="step-indicator">
+            <div class="step completed">1. Login</div>
+            <div class="step active">2. Fetch Assignments</div>
+            <div class="step">3. Submit Assignment</div>
+            <div class="step">4. Faculty Grades</div>
+            <div class="step">5. View Feedback</div>
+        </div>
+
+        <!-- Section 1: Authentication -->
+        <div class="section">
+            <h2>Step 1: Authentication</h2>
+            <div class="info-box">
+                <strong>Status:</strong> <span id="authStatus" class="loading">Initializing...</span>
+            </div>
+            <button onclick="autoLogin()">Auto Login as Student 1</button>
+            <button onclick="checkToken()">Check Token</button>
+            <div class="code-block" id="authInfo">Waiting...</div>
+        </div>
+
+        <!-- Section 2: Student Assignments -->
+        <div class="section">
+            <h2>Step 2: Fetch Student Assignments</h2>
+            <button onclick="fetchAssignments()">Load Assignments for Student 1</button>
+            <button onclick="viewDatabase()">View SQL Server Data</button>
+            <div id="assignmentsContainer" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- Section 3: Submit Assignment -->
+        <div class="section">
+            <h2>Step 3: Submit Assignment</h2>
+            <div class="form-group">
+                <label for="assignmentSelect">Select Assignment to Submit:</label>
+                <select id="assignmentSelect" onchange="updateAssignmentDetails()">
+                    <option value="">-- Select an assignment --</option>
+                </select>
+            </div>
+            <div id="assignmentDetails" style="display: none;">
+                <div class="info-box">
+                    <strong>Title:</strong> <span id="selectedTitle"></span><br>
+                    <strong>Course:</strong> <span id="selectedCourse"></span><br>
+                    <strong>Deadline:</strong> <span id="selectedDeadline"></span><br>
+                    <strong>Status:</strong> <span id="selectedStatus"></span>
+                </div>
+                <div class="form-group">
+                    <label for="submissionText">Submission Text:</label>
+                    <textarea id="submissionText" rows="5" placeholder="Enter your assignment submission here..."></textarea>
+                </div>
+                <button onclick="submitAssignment()">Submit Assignment</button>
+            </div>
+            <div class="code-block" id="submitResult" style="display: none;"></div>
+        </div>
+
+        <!-- Section 4: Faculty Reviews -->
+        <div class="section">
+            <h2>Step 4: Faculty View - Submissions to Grade</h2>
+            <button onclick="fetchFacultyView()">Load All Submissions for Faculty</button>
+            <div id="facultyContainer" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- Section 5: SQL Server Data -->
+        <div class="section">
+            <h2>Step 5: SQL Server Database Structure</h2>
+            <button onclick="fetchSQLServerData()">Show Complete SQL Server Data</button>
+            <div id="sqlServerContainer" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost/Database-main/backend';
+        let token = null;
+        let studentAssignments = [];
+
+        // Auto Login
+        async function autoLogin() {
+            try {
+                document.getElementById('authStatus').innerHTML = '<span class="loading">Logging in...</span>';
+                
+                // Simulate login
+                const response = await fetch(`${API_URL}/auth/login.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'student1@university.edu',
+                        password: 'password123'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.token || data.accessToken) {
+                    token = data.token || data.accessToken;
+                    localStorage.setItem('accessToken', token);
+                    document.getElementById('authStatus').innerHTML = '<span class="success">✓ Logged in successfully</span>';
+                    document.getElementById('authInfo').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    document.getElementById('authStatus').innerHTML = '<span class="error">✗ Login failed</span>';
+                    document.getElementById('authInfo').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                document.getElementById('authStatus').innerHTML = '<span class="error">✗ Error: ' + error.message + '</span>';
+            }
+        }
+
+        // Check Token
+        function checkToken() {
+            const storedToken = localStorage.getItem('accessToken');
+            if (storedToken) {
+                document.getElementById('authInfo').textContent = 'Token found:\n' + storedToken;
+                token = storedToken;
+            } else {
+                document.getElementById('authInfo').textContent = 'No token found in localStorage';
+            }
+        }
+
+        // Fetch Assignments
+        async function fetchAssignments() {
+            try {
+                if (!token) {
+                    alert('Please login first');
+                    return;
+                }
+
+                const response = await fetch(`${API_URL}/student/assignments`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                studentAssignments = data.assignments || [];
+
+                let html = `<p class="success">✓ Loaded ${studentAssignments.length} assignments</p>`;
+                html += '<table class="table"><tr><th>Title</th><th>Course</th><th>Deadline</th><th>Status</th><th>Past Deadline</th></tr>';
+
+                studentAssignments.forEach((a, index) => {
+                    const status = a.submission_status === 'not_submitted' ? 
+                        '<span class="badge not-submitted">Not Submitted</span>' : 
+                        '<span class="badge submitted">Submitted</span>';
+                    const pastDeadline = a.is_past_deadline ? 
+                        '<span class="badge overdue">Yes</span>' : 
+                        '<span class="badge" style="background: #10b981; color: white;">No</span>';
+                    
+                    html += `<tr>
+                        <td>${a.title}</td>
+                        <td>${a.course_code}</td>
+                        <td>${new Date(a.deadline).toLocaleString()}</td>
+                        <td>${status}</td>
+                        <td>${pastDeadline}</td>
+                    </tr>`;
+
+                    // Populate select dropdown
+                    if (a.submission_status === 'not_submitted' && !a.is_past_deadline) {
+                        const option = document.createElement('option');
+                        option.value = a.id;
+                        option.textContent = `${a.course_code} - ${a.title}`;
+                        document.getElementById('assignmentSelect').appendChild(option);
+                    }
+                });
+
+                html += '</table>';
+                document.getElementById('assignmentsContainer').innerHTML = html;
+
+            } catch (error) {
+                document.getElementById('assignmentsContainer').innerHTML = 
+                    `<p class="error">✗ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Update Assignment Details
+        function updateAssignmentDetails() {
+            const selectedId = document.getElementById('assignmentSelect').value;
+            if (!selectedId) {
+                document.getElementById('assignmentDetails').style.display = 'none';
+                return;
+            }
+
+            const assignment = studentAssignments.find(a => a.id == selectedId);
+            if (assignment) {
+                document.getElementById('selectedTitle').textContent = assignment.title;
+                document.getElementById('selectedCourse').textContent = `${assignment.course_code} - ${assignment.course_name}`;
+                document.getElementById('selectedDeadline').textContent = new Date(assignment.deadline).toLocaleString();
+                document.getElementById('selectedStatus').textContent = assignment.submission_status;
+                document.getElementById('assignmentDetails').style.display = 'block';
+            }
+        }
+
+        // Submit Assignment
+        async function submitAssignment() {
+            try {
+                const assignmentId = document.getElementById('assignmentSelect').value;
+                const submissionText = document.getElementById('submissionText').value;
+
+                if (!assignmentId || !submissionText.trim()) {
+                    alert('Please select assignment and enter submission text');
+                    return;
+                }
+
+                const response = await fetch(`${API_URL}/student/submit-assignment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        assignment_id: parseInt(assignmentId),
+                        submission_text: submissionText
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById('submitResult').style.display = 'block';
+                document.getElementById('submitResult').innerHTML = 
+                    '<strong>Submission Response:</strong>\n' + JSON.stringify(data, null, 2);
+
+                if (data.status === 'success' || response.ok) {
+                    setTimeout(() => fetchAssignments(), 1000);
+                }
+            } catch (error) {
+                document.getElementById('submitResult').style.display = 'block';
+                document.getElementById('submitResult').innerHTML = 
+                    '<strong class="error">Error:</strong> ' + error.message;
+            }
+        }
+
+        // Fetch Faculty View
+        async function fetchFacultyView() {
+            try {
+                const response = await fetch(`${API_URL}/faculty/assignment-submissions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                const submissions = data.submissions || [];
+
+                let html = `<p class="success">✓ Found ${submissions.length} submissions</p>`;
+                html += '<table class="table"><tr><th>Student</th><th>Assignment</th><th>Status</th><th>Submitted</th><th>Grading Status</th></tr>';
+
+                submissions.forEach(sub => {
+                    const feedbackStatus = sub.feedback_status === 'pending' ?
+                        '<span class="badge pending">Pending</span>' :
+                        '<span class="badge graded">Graded</span>';
+                    
+                    html += `<tr>
+                        <td>${sub.first_name} ${sub.last_name}</td>
+                        <td>${sub.assignment_title}</td>
+                        <td><span class="badge submitted">Submitted</span></td>
+                        <td>${new Date(sub.submitted_at).toLocaleString()}</td>
+                        <td>${feedbackStatus}</td>
+                    </tr>`;
+                });
+
+                html += '</table>';
+                document.getElementById('facultyContainer').innerHTML = html;
+
+            } catch (error) {
+                document.getElementById('facultyContainer').innerHTML = 
+                    `<p class="error">✗ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Fetch SQL Server Data
+        async function fetchSQLServerData() {
+            try {
+                const response = await fetch(`${API_URL}/debug/submission-flow-complete.php`);
+                const data = await response.json();
+
+                let html = '<div style="max-height: 500px; overflow-y: auto;">';
+                html += `<p class="success">✓ Database Name: ${data.database}</p>`;
+                html += `<strong>Record Counts:</strong><pre>${JSON.stringify(data.record_counts, null, 2)}</pre>`;
+                html += `<strong>Student Assignments Summary:</strong><pre>${JSON.stringify(data.assignments_summary, null, 2)}</pre>`;
+                html += `<strong>Grading Summary:</strong><pre>${JSON.stringify(data.grading_summary, null, 2)}</pre>`;
+                html += '</div>';
+
+                document.getElementById('sqlServerContainer').innerHTML = html;
+
+            } catch (error) {
+                document.getElementById('sqlServerContainer').innerHTML = 
+                    `<p class="error">✗ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            checkToken();
+            if (!token) {
+                autoLogin();
+            }
+        });
+    </script>
+</body>
+</html>
