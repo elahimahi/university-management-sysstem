@@ -9,17 +9,19 @@
  * All endpoints return JSON responses.
  */
 
-// Enable CORS for all requests
-header("Access-Control-Allow-Origin: *"); // Allow all origins for testing purposes
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Access-Control-Allow-Credentials: true");
-header("Content-Type: application/json; charset=UTF-8");
+// Set CORS headers (may already be set by router.php, but ensure they're present)
+if (!headers_sent()) {
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept");
+    header("Access-Control-Max-Age: 86400");
+    header("Content-Type: application/json; charset=UTF-8");
 
-// Handle preflight requests immediately
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
+    // Handle preflight OPTIONS requests immediately
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit();
+    }
 }
 
 // Get the request URI and method
