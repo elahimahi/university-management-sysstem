@@ -2,26 +2,31 @@
 /**
  * Reject User Registration
  * POST /admin/reject-user
- * 
- * Body:
- * {
- *   "user_id": 5,
- *   "admin_id": 1,
- *   "reason": "Suspicious registration activity"
- * }
  */
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Content-Type: application/json");
+// ============================================
+// ABSOLUTE FIRST LINE - CORS HEADERS
+// ============================================
+http_response_code(200);
+header('Access-Control-Allow-Origin: *', true);
+header('Access-Control-Allow-Credentials: true', true);
+header('Access-Control-Max-Age: 86400', true);
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD', true);
+header('Access-Control-Allow-Headers: Content-Type, Accept, X-Requested-With, Authorization, Origin', true);
+header('Content-Type: application/json; charset=utf-8', true);
 
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+// Handle OPTIONS for preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
-    exit();
+    exit(0);
 }
 
+// ============================================
+// NOW load database and execute logic
+// ============================================
+
 require_once __DIR__ . '/../core/db_connect.php';
+require_once __DIR__ . '/../auth/auth_helper.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -47,9 +52,9 @@ try {
     $adminStmt->execute([$adminId]);
     $admin = $adminStmt->fetch();
     
-    if (!$admin || $admin['role'] !== 'admin') {
+    if (!$admin || $admin['role'] !== 'superadmin') {
         http_response_code(403);
-        echo json_encode(['message' => 'Only admins can reject registrations']);
+        echo json_encode(['message' => 'Only superadmins can reject registrations']);
         exit;
     }
     

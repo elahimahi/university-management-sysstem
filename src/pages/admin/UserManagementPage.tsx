@@ -9,6 +9,8 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
+import { apiService } from '../../services/api.service';
+import { getAccessToken } from '../../utils/auth.utils';
 import { API_BASE_URL } from '../../constants/app.constants';
 
 interface User {
@@ -19,6 +21,16 @@ interface User {
   role: string;
   approval_status: string;
   created_at: string;
+}
+
+interface UsersResponse {
+  status: string;
+  users: User[];
+}
+
+interface DeleteResponse {
+  status: string;
+  message?: string;
 }
 
 const UserManagementPage: React.FC = () => {
@@ -44,18 +56,16 @@ const UserManagementPage: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/admin/get_all_users.php`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setUsers(data.users || []);
+      const data = await apiService.get<UsersResponse>('/admin/get-all-users');
+      if (data && data.users) {
+        setUsers(data.users);
         setError(null);
       } else {
-        setError(data.message || 'Failed to fetch users');
+        setError('Failed to parse user data');
       }
-    } catch (err) {
-      setError('Network error while fetching users');
-      console.error(err);
+    } catch (err: any) {
+      setError(err?.message || 'Network error while fetching users');
+      console.error('[UserManagementPage] Error fetching users:', err);
     } finally {
       setLoading(false);
     }
@@ -90,23 +100,19 @@ const UserManagementPage: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/delete_user.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId }),
+      const data = await apiService.delete<DeleteResponse>(`/admin/delete-user`, {
+        data: { user_id: userId },
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (data && data.status === 'success') {
         setSuccess('❌ User deleted successfully');
         setUsers(users.filter(u => u.id !== userId));
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(data.message || 'Failed to delete user');
+        setError(data?.message || 'Failed to delete user');
       }
-    } catch (err) {
-      setError('Network error while deleting user');
+    } catch (err: any) {
+      setError(err?.message || 'Network error while deleting user');
       console.error(err);
     }
   };
@@ -115,6 +121,8 @@ const UserManagementPage: React.FC = () => {
     switch (role.toLowerCase()) {
       case 'admin':
         return 'bg-red-100 text-red-800';
+      case 'superadmin':
+        return 'bg-purple-100 text-purple-800';
       case 'faculty':
         return 'bg-blue-100 text-blue-800';
       case 'student':
@@ -234,13 +242,13 @@ const UserManagementPage: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 text-gray-200">{user.email}</td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleColor(user.role)}`}>
-                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleColor(user.role || '')}`}>
+                            {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'N/A'}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(user.approval_status)}`}>
-                            {user.approval_status.charAt(0).toUpperCase() + user.approval_status.slice(1)}
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(user.approval_status || '')}`}>
+                            {user.approval_status ? user.approval_status.charAt(0).toUpperCase() + user.approval_status.slice(1) : 'N/A'}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-gray-400 text-sm">

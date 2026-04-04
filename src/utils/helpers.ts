@@ -37,7 +37,9 @@ export const truncateText = (text: string, maxLength: number): string => {
  * Generate initials from a name
  */
 export const getInitials = (firstName: string, lastName: string): string => {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const first = firstName && firstName.length > 0 ? firstName.charAt(0) : '';
+  const last = lastName && lastName.length > 0 ? lastName.charAt(0) : '';
+  return (first + last).toUpperCase() || 'U';
 };
 
 /**

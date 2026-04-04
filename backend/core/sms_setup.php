@@ -8,11 +8,14 @@
 require_once __DIR__ . '/db_connect.php';
 
 try {
-    // Create SMS logs table
+    // Drop and recreate SMS logs table so the schema is always correct
     $sms_table_sql = "
-    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='sms_logs' AND xtype='U')
+    IF OBJECT_ID('sms_logs', 'U') IS NOT NULL
+        DROP TABLE sms_logs;
+
     CREATE TABLE sms_logs (
         id INT PRIMARY KEY IDENTITY(1,1),
+        student_id INT NULL,
         phone_number VARCHAR(20) NOT NULL,
         message NVARCHAR(MAX) NOT NULL,
         sms_type VARCHAR(50),

@@ -71,28 +71,61 @@ const StudentFeesPage: React.FC = () => {
     try {
       const token = getAccessToken();
       const response = await axios.post(
-        `${API_BASE_URL}/student/get-fees-with-deadline`,
+        `${API_BASE_URL}/student/fees`,
         { student_id: user.id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setFees(response.data.fees || []);
-      setStats(response.data.summary || null);
+
+      const rawFees = response.data.fees || [];
+      const normalizedFees: Fee[] = rawFees.map((fee: any) => {
+        const dueDateValue = fee.due_date ? new Date(fee.due_date) : null;
+        const now = new Date();
+        const hoursRemaining = dueDateValue ? Math.round((dueDateValue.getTime() - now.getTime()) / (1000 * 60 * 60)) : null;
+        const paidAmount = fee.paid_amount ?? fee.total_paid ?? 0;
+        const remainingAmount = fee.remaining_amount != null ? fee.remaining_amount : fee.amount - paidAmount;
+
+        let paymentStatusDisplay = 'Pending';
+        if (fee.status === 'paid' || remainingAmount <= 0) {
+          paymentStatusDisplay = 'Paid';
+        } else if (hoursRemaining !== null && hoursRemaining < 0) {
+          paymentStatusDisplay = 'Overdue - Pay Now!';
+        } else if (hoursRemaining !== null && hoursRemaining < 24) {
+          paymentStatusDisplay = 'Urgent - Less than 24 hours';
+        }
+
+        return {
+          ...fee,
+          payment_deadline: fee.payment_deadline || fee.due_date || null,
+          hours_remaining: hoursRemaining,
+          payment_status_display: fee.payment_status_display || paymentStatusDisplay,
+          paid_amount: Number(paidAmount),
+          remaining_amount: Number(remainingAmount),
+          penalty_applied: fee.penalty_applied ?? false,
+          penalty_amount: fee.penalty_amount ?? 0,
+          penalty_percentage: fee.penalty_percentage ?? null,
+          penalty_type: fee.penalty_type ?? null,
+          apply_after_days: fee.apply_after_days ?? null,
+        };
+      });
+
+      const rawStats = response.data.summary || response.data.statistics || {};
+      const normalizedStats: FeeStats = {
+        total_fees_count: normalizedFees.length,
+        total_amount: Number(rawStats.total_amount ?? rawStats.total_due ?? 0),
+        total_paid: Number(rawStats.total_paid ?? 0),
+        total_pending: Number(rawStats.total_pending ?? 0),
+        total_penalty: Number(rawStats.total_penalty ?? 0),
+        urgent_fees: Number(rawStats.urgent_fees ?? normalizedFees.filter((fee) => fee.payment_status_display === 'Urgent - Less than 24 hours').length),
+        overdue_fees: Number(rawStats.overdue_fees ?? rawStats.overdue_count ?? normalizedFees.filter((fee) => fee.payment_status_display === 'Overdue - Pay Now!').length),
+        message: rawStats.message || 'Your fees are listed below',
+      };
+
+      setFees(normalizedFees);
+      setStats(normalizedStats);
       setError(null);
     } catch (err: any) {
       console.error('Error fetching fees:', err);
-      // Fallback to old endpoint if new one doesn't exist
-      try {
-        const token = getAccessToken();
-        const response = await axios.post(
-          `${API_BASE_URL}/student/fees`,
-          { student_id: user.id },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setFees(response.data.fees || []);
-        setStats(response.data.statistics || null);
-      } catch (fallbackErr: any) {
-        setError(fallbackErr.response?.data?.error || 'Failed to load fees');
-      }
+      setError(err.response?.data?.error || 'Failed to load fees');
     } finally {
       setLoading(false);
     }

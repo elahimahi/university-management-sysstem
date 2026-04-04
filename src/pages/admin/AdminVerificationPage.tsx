@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../../constants/app.constants';
+import { apiService } from '../../services/api.service';
 import { useAuth } from '../../contexts/AuthContext';
 import AdminHeader from '../../components/admin/AdminHeader';
 
@@ -13,6 +13,17 @@ interface PendingUser {
   role: string;
   approval_status: string;
   created_at: string;
+}
+
+interface PendingUsersResponse {
+  status: string;
+  users: PendingUser[];
+}
+
+interface ApprovalResponse {
+  status: string;
+  message: string;
+  user: PendingUser;
 }
 
 const AdminVerificationPage: React.FC = () => {
@@ -35,17 +46,15 @@ const AdminVerificationPage: React.FC = () => {
   const fetchPendingUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/admin/get_pending_registrations.php`);
-      const data = await response.json();
-
-      if (response.ok) {
+      const data = await apiService.get<PendingUsersResponse>('/admin/get-pending-registrations');
+      if (data && data.users) {
         setPendingUsers(data.users);
         setError(null);
       } else {
-        setError(data.message || 'Failed to fetch pending registrations');
+        setError('Failed to fetch pending registrations');
       }
-    } catch (err) {
-      setError('Network error while fetching pending users');
+    } catch (err: any) {
+      setError(err?.message || 'Network error while fetching pending users');
       console.error(err);
     } finally {
       setLoading(false);
@@ -60,26 +69,20 @@ const AdminVerificationPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/approve_user.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          admin_id: currentUser.id, // Use currentUser.id directly to ensure it's fresh
-        }),
+      const data = await apiService.post<ApprovalResponse>('/admin/approve-user', {
+        user_id: userId,
+        admin_id: currentUser.id,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (data && data.status === 'success') {
         setSuccessMessage(`✅ User ${data.user.email} approved successfully`);
         setPendingUsers(pendingUsers.filter((u) => u.id !== userId));
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError(data.message || 'Failed to approve user');
+        setError(data?.message || 'Failed to approve user');
       }
-    } catch (err) {
-      setError('Network error while approving user');
+    } catch (err: any) {
+      setError(err?.message || 'Network error while approving user');
       console.error(err);
     }
   };
@@ -97,29 +100,23 @@ const AdminVerificationPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/reject_user.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          admin_id: currentUser.id, // Use currentUser.id directly to ensure it's fresh
-          reason: rejectionReason,
-        }),
+      const data = await apiService.post<ApprovalResponse>('/admin/reject-user', {
+        user_id: userId,
+        admin_id: currentUser.id,
+        reason: rejectionReason,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (data && data.status === 'success') {
         setSuccessMessage(`❌ User ${data.user.email} rejected`);
         setPendingUsers(pendingUsers.filter((u) => u.id !== userId));
         setRejectingUserId(null);
         setRejectionReason('');
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError(data.message || 'Failed to reject user');
+        setError(data?.message || 'Failed to reject user');
       }
-    } catch (err) {
-      setError('Network error while rejecting user');
+    } catch (err: any) {
+      setError(err?.message || 'Network error while rejecting user');
       console.error(err);
     }
   };
