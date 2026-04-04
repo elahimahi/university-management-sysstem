@@ -18,8 +18,25 @@ Supporting Tools • JWT: For secure authentication and API communication Key Fe
 
 Development Tools & Platforms • Backend: Laravel • Frontend: React.js • DBMS: Microsoft SQL Server • Database Client: SSMS • Documentation: Markdown (README.md) • Version Control: Git & GitHub
 
-Milestones  Milestone 1: Planning & Database Design • Requirement analysis • Database normalization • SQL Server setup • Dummy data insertion  Milestone 2: Backend & API Development • Laravel project setup • Authentication system • REST API development • Stored procedures & triggers • Database integration
+Milestones  Milestone 1: Planning & Database Design
 
-Milestone 3: Frontend, AI & Deployment • React UI development • API integration • AI-assisted features • Testing & bug fixing • Deployment & final documentation
+Requirement analysis
+Database normalization
+SQL Server setup
+Dummy data insertion
+Milestone 2: Backend & API Development
+
+PHP backend setup
+Authentication system
+REST API development
+Stored procedures & triggers
+Database integration
+Milestone 3: Frontend, AI & Deployment
+
+React UI development
+API integration
+AI-assisted features
+Testing & bug fixing
+Deployment & final documentation
 
 Conclusion The University Management System (UMS) is a scalable and practical academic software solution that integrates database design, backend API development, frontend user interfaces, and AI-assisted features. This project demonstrates the application of software engineering principles, DBMS concepts, RESTful architecture, and full-stack development practices in an academic context.
