@@ -146,7 +146,8 @@ try {
             $student_name,
             $amount_paid,
             $payment_method,
-            max(0, $fee_amount - $total_paid)
+            max(0, $fee_amount - $total_paid),
+            $student_id
         );
     }
 

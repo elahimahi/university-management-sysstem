@@ -134,7 +134,7 @@ const RegisterPage: React.FC = () => {
       } else {
         // Show pending approval message
         setRegistrationError(
-          `Registration successful! Your account is pending admin approval. You will receive a notification once approved.`
+          `Registration successful! Your account is pending superadmin approval. You will receive a notification once approved.`
         );
         // Redirect to login page after 3 seconds
         setTimeout(() => {

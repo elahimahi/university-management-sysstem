@@ -25,6 +25,7 @@ try {
             f.status,
             COUNT(p.id) as payment_count,
             SUM(p.amount_paid) as total_paid,
+            STRING_AGG(p.payment_method, \', \') as payment_methods,
             CASE 
                 WHEN CAST(f.due_date AS DATE) < CAST(GETDATE() AS DATE) AND f.status = \'pending\' THEN \'overdue\'
                 ELSE f.status

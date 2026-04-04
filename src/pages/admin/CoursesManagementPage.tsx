@@ -8,7 +8,7 @@ import {
   CheckCircle,
   Search
 } from 'lucide-react';
-import { API_BASE_URL } from '../../constants/app.constants';
+import { apiService } from '../../services/api.service';
 
 interface Course {
   id: number;
@@ -28,6 +28,16 @@ interface FormData {
   category: string;
   level: string;
   instructor_id: number;
+}
+
+interface CoursesResponse {
+  status: string;
+  courses: Course[];
+}
+
+interface CourseActionResponse {
+  status: string;
+  message?: string;
 }
 
 const CoursesManagementPage: React.FC = () => {
@@ -59,17 +69,15 @@ const CoursesManagementPage: React.FC = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/admin/get_all_courses.php`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setCourses(data.courses || []);
+      const data = await apiService.get<CoursesResponse>('/admin/courses');
+      if (data && data.courses) {
+        setCourses(data.courses);
         setError(null);
       } else {
-        setError(data.message || 'Failed to fetch courses');
+        setError('Failed to fetch courses');
       }
-    } catch (err) {
-      setError('Network error while fetching courses');
+    } catch (err: any) {
+      setError(err?.message || 'Network error while fetching courses');
       console.error(err);
     } finally {
       setLoading(false);
@@ -92,48 +100,57 @@ const CoursesManagementPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.code || !formData.name) {
+    const normalizedCode = formData.code.trim().toUpperCase();
+    const normalizedName = formData.name.trim();
+
+    if (!normalizedCode || !normalizedName) {
       setError('Course code and name are required');
       return;
     }
 
+    const existingCourse = courses.find(c => c.code.trim().toLowerCase() === normalizedCode.toLowerCase());
+    if (existingCourse && !editingCourse) {
+      setError('Course code already exists');
+      return;
+    }
+
+    if (editingCourse && existingCourse && existingCourse.id !== editingCourse.id) {
+      setError('Course code already exists');
+      return;
+    }
+
     try {
-      const url = editingCourse
-        ? `${API_BASE_URL}/admin/update_course.php`
-        : `${API_BASE_URL}/admin/create_course.php`;
+      let response;
+      const payload = {
+        ...formData,
+        code: normalizedCode,
+        name: normalizedName,
+      };
 
-      const body = editingCourse
-        ? { ...formData, id: editingCourse.id }
-        : formData;
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess(editingCourse ? '✅ Course updated!' : '✅ Course created!');
-        setShowForm(false);
-        setEditingCourse(null);
-        setFormData({
-          code: '',
-          name: '',
-          credits: 3,
-          category: 'General',
-          level: 'Undergraduate',
-          instructor_id: 0,
-        });
-        fetchCourses();
-        setTimeout(() => setSuccess(null), 3000);
+      if (editingCourse) {
+        response = await apiService.post<CourseActionResponse>('/admin/update-course', { ...payload, id: editingCourse.id });
+        setSuccess('✅ Course updated!');
       } else {
-        setError(data.message || 'Failed to save course');
+        response = await apiService.post<CourseActionResponse>('/admin/create-course', payload);
+        setSuccess('✅ Course created!');
       }
-    } catch (err) {
-      setError('Network error while saving course');
-      console.error(err);
+      
+      setShowForm(false);
+      setEditingCourse(null);
+      setFormData({
+        code: '',
+        name: '',
+        credits: 3,
+        category: 'General',
+        level: 'Undergraduate',
+        instructor_id: 0,
+      });
+      fetchCourses();
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to save course';
+      setError(errorMessage);
+      console.error('Course save error:', errorMessage, err);
     }
   };
 
@@ -141,24 +158,18 @@ const CoursesManagementPage: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this course?')) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/delete_course.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ course_id: courseId }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess('❌ Course deleted successfully');
+      const data = await apiService.delete<CourseActionResponse>('/admin/delete-course', { data: { course_id: courseId } });
+      
+      if (data && data.status === 'success') {
+        setSuccess('✅ Course deleted successfully');
         setCourses(courses.filter(c => c.id !== courseId));
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(data.message || 'Failed to delete course');
+        setError(data?.message || 'Failed to delete course');
       }
-    } catch (err) {
-      setError('Network error while deleting course');
-      console.error(err);
+    } catch (err: any) {
+      setError(err?.message || 'Network error while deleting course');
+      console.error('Delete error:', err);
     }
   };
 

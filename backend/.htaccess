@@ -1,10 +1,10 @@
 RewriteEngine On
 
-# Handle Angular and React Router
-RewriteCond %{REQUEST_FILENAME} -s [OR]
-RewriteCond %{REQUEST_FILENAME} -l [OR]
+# Allow direct access to PHP files and actual directories - no rewrite needed
+RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^.*$ - [NC,L]
+RewriteRule ^(.*)$ - [L]
 
-# Handle PHP API routes
-RewriteRule ^(.*)$ index.php [QSA,L]
+# Everything else (routes without .php extension) goes through index.php
+# This allows clean REST API URLs like /faculty/stats instead of /faculty/stats.php
+RewriteRule ^(.*)$ /Database_Project/university-management-sysstem/backend/index.php [QSA,L]

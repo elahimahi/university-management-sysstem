@@ -77,6 +77,16 @@ CREATE TABLE fees (
     CONSTRAINT FK_Fees_Users FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- 7. Payments Table
+CREATE TABLE payments (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    fee_id INT NOT NULL,
+    amount_paid DECIMAL(10, 2) NOT NULL,
+    payment_date DATETIME2 DEFAULT GETDATE(),
+    payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('bkash', 'nagad', 'rocket', 'card')),
+    CONSTRAINT FK_Payments_Fees FOREIGN KEY (fee_id) REFERENCES fees(id) ON DELETE CASCADE
+);
+
 -- 8. Assignments Table
 CREATE TABLE assignments (
     id INT IDENTITY(1,1) PRIMARY KEY,

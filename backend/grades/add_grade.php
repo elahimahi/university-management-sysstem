@@ -13,54 +13,71 @@ if (!$user) {
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-if (!isset($data['enrollment_id']) || !isset($data['grade']) || !isset($data['grade_point'])) {
+// Support both old enrollment_id and new student_id + course_id format
+$student_id = null;
+$course_id = null;
+$enrollment_id = null;
+
+if (isset($data['enrollment_id'])) {
+    // Old format: get student_id and course_id from enrollment
+    $stmt = $pdo->prepare("SELECT student_id, course_id FROM enrollments WHERE id = ?");
+    $stmt->execute([$data['enrollment_id']]);
+    $enrollment = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($enrollment) {
+        $student_id = $enrollment['student_id'];
+        $course_id = $enrollment['course_id'];
+        $enrollment_id = $data['enrollment_id'];
+    }
+} elseif (isset($data['student_id']) && isset($data['course_id'])) {
+    // New format: directly provided
+    $student_id = $data['student_id'];
+    $course_id = $data['course_id'];
+}
+
+if (!$student_id || !$course_id) {
     http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => 'Missing required fields: enrollment_id, grade, grade_point']);
+    echo json_encode(['status' => 'error', 'message' => 'Missing: enrollment_id OR (student_id + course_id)']);
+    exit();
+}
+
+if (!isset($data['grade']) || !isset($data['grade_point'])) {
+    http_response_code(400);
+    echo json_encode(['status' => 'error', 'message' => 'Missing: grade, grade_point']);
     exit();
 }
 
 try {
-    // 1. Verify this instructor actually teaches the course for this enrollment
-    $stmt = $pdo->prepare("
-        SELECT e.id, e.student_id, c.id as course_id
-        FROM enrollments e
-        JOIN courses c ON e.course_id = c.id
-        WHERE e.id = ? AND c.instructor_id = ?
-    ");
-    $stmt->execute([$data['enrollment_id'], $user['id']]);
-    $enrollment = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Verify this instructor teaches this course
+    $stmt = $pdo->prepare("SELECT id FROM courses WHERE id = ? AND instructor_id = ?");
+    $stmt->execute([$course_id, $user['id']]);
     
-    if (!$enrollment) {
+    if (!$stmt->fetch()) {
         http_response_code(403);
-        echo json_encode(['status' => 'error', 'message' => 'You do not have permission to grade this student']);
+        echo json_encode(['status' => 'error', 'message' => 'You do not have permission to grade this course']);
         exit();
     }
 
-    // 2. Insert the grade
+    // Insert or update the grade
     $stmt = $pdo->prepare("
-        INSERT INTO grades (enrollment_id, grade, grade_point, assessment_type, recorded_at) 
-        VALUES (?, ?, ?, ?, GETDATE())
+        INSERT INTO grades (student_id, course_id, grade, points, semester, assigned_at) 
+        VALUES (?, ?, ?, ?, ?, GETDATE())
     ");
     $stmt->execute([
-        $data['enrollment_id'],
-        $data['grade'],
+        $student_id,
+        $course_id,
+        $data['grade'] ?? '?',
         $data['grade_point'],
-        $data['assessment_type'] ?? 'Final Score'
+        $data['semester'] ?? date('Y') . '-' . (date('n') > 6 ? 'Fall' : 'Spring')
     ]);
-
-    // 3. Optionally update enrollment status to completed if needed
-    if (isset($data['mark_completed']) && $data['mark_completed'] === true) {
-        $stmt = $pdo->prepare("UPDATE enrollments SET status = 'completed' WHERE id = ?");
-        $stmt->execute([$data['enrollment_id']]);
-    }
 
     http_response_code(201);
     echo json_encode([
         'status' => 'success',
         'message' => 'Grade recorded successfully',
-        'enrollment_id' => $data['enrollment_id'],
+        'student_id' => $student_id,
+        'course_id' => $course_id,
         'grade' => $data['grade'],
-        'grade_point' => $data['grade_point']
+        'points' => $data['grade_point']
     ]);
 
 } catch (PDOException $e) {

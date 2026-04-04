@@ -11,11 +11,11 @@ if (php_sapi_name() !== 'cli') {
     }
 }
 
-$host = 'MAHI\SQLEXPRESS';
+$host = 'DESKTOP-83A2G7T\SQLEXPRESS';
 $db   = 'university_db';
 
-// For Windows Authentication
-$dsn = "sqlsrv:Server=$host;Database=$db;Encrypt=true;TrustServerCertificate=true";
+// For Windows Authentication - Disable encryption for local development
+$dsn = "sqlsrv:Server=$host;Database=$db;Encrypt=no;TrustServerCertificate=false";
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

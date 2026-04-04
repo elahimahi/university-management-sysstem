@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../../constants/app.constants';
 interface Fee {
   id: number;
   student_id: number;
+  description?: string;
   amount: number;
   semester: string;
   due_date: string;
@@ -21,10 +22,11 @@ const FeesManagementPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    student_id: '',
+    description: '',
     amount: '',
     semester: 'Fall 2024',
     due_date: '',
+    status: 'pending',
   });
 
   useEffect(() => {
@@ -75,11 +77,10 @@ const FeesManagementPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const studentId = formData.student_id ? parseInt(formData.student_id as string) : null;
     const amount = formData.amount ? parseFloat(formData.amount as string) : null;
 
-    if (!studentId || !amount) {
-      setError('Student ID and amount are required');
+    if (!amount || !formData.description || !formData.semester || !formData.due_date || !formData.status) {
+      setError('Description, amount, semester, date, and status are required');
       return;
     }
 
@@ -88,13 +89,11 @@ const FeesManagementPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          student_ids: [studentId],
-          description: 'Fee',
+          student_ids: null,
+          description: formData.description,
           amount: amount,
           due_date: formData.due_date,
-          payment_deadline: formData.due_date,
-          penalty_percentage: 5,
-          apply_after_days: 7,
+          status: formData.status,
         }),
       });
 
@@ -104,10 +103,11 @@ const FeesManagementPage: React.FC = () => {
         setSuccess('✅ Fee created successfully!');
         setShowForm(false);
         setFormData({
-          student_id: '',
+          description: '',
           amount: '',
           semester: 'Fall 2024',
           due_date: '',
+          status: 'pending',
         });
         fetchFees();
         setTimeout(() => setSuccess(null), 3000);
@@ -218,12 +218,13 @@ const FeesManagementPage: React.FC = () => {
         {showForm && (
           <div className="bg-slate-800/50 border border-slate-600 rounded-lg p-6 mb-8">
             <form onSubmit={handleSubmit}>
+              <p className="text-sm text-slate-300 mb-4">নতুন ফি তৈরি করতে উপরের ফর্ম পূরণ করুন এবং Create Fee বাটনে ক্লিক করুন।</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <input
-                  type="number"
-                  placeholder="Student ID"
-                  value={formData.student_id}
-                  onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
+                  type="text"
+                  placeholder="Description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="bg-slate-700/50 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-purple-500"
                   required
                 />
@@ -242,15 +243,26 @@ const FeesManagementPage: React.FC = () => {
                   value={formData.due_date}
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                   className="bg-slate-700/50 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-purple-500"
+                  required
                 />
                 <select
                   value={formData.semester}
                   onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
                   className="bg-slate-700/50 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-purple-500"
+                  required
                 >
                   <option value="Fall 2024">Fall 2024</option>
                   <option value="Spring 2025">Spring 2025</option>
                   <option value="Summer 2025">Summer 2025</option>
+                </select>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="bg-slate-700/50 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-purple-500"
+                  required
+                >
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
                 </select>
               </div>
               <button
@@ -273,6 +285,7 @@ const FeesManagementPage: React.FC = () => {
                 <thead className="bg-slate-800/50 border-b border-slate-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Student ID</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Description</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Amount</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Semester</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Due Date</th>
@@ -283,7 +296,7 @@ const FeesManagementPage: React.FC = () => {
                 <tbody className="divide-y divide-slate-700">
                   {filteredFees.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
+                      <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
                         No fees found
                       </td>
                     </tr>
@@ -291,12 +304,13 @@ const FeesManagementPage: React.FC = () => {
                     filteredFees.map((fee) => (
                       <tr key={fee.id} className="hover:bg-slate-800/30 transition-colors">
                         <td className="px-6 py-4 text-gray-200">{fee.student_id}</td>
+                        <td className="px-6 py-4 text-gray-200">{fee.description || '—'}</td>
                         <td className="px-6 py-4 text-gray-200">${parseFloat(fee.amount.toString()).toFixed(2)}</td>
                         <td className="px-6 py-4 text-gray-200">{fee.semester}</td>
                         <td className="px-6 py-4 text-gray-200">{new Date(fee.due_date).toLocaleDateString()}</td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(fee.status)}`}>
-                            {fee.status.charAt(0).toUpperCase() + fee.status.slice(1)}
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(fee.status || '')}`}>
+                            {fee.status ? fee.status.charAt(0).toUpperCase() + fee.status.slice(1) : 'N/A'}
                           </span>
                         </td>
                         <td className="px-6 py-4">
