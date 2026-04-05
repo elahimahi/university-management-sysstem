@@ -1,16 +1,16 @@
 <?php
-// Only set headers if running in HTTP context
-if (php_sapi_name() !== 'cli') {
-    header("Access-Control-Allow-Origin: *");
-    header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
-    header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+// CORS headers are now set in index.php
+// This file only handles database connection
 
+<<<<<<< HEAD
     if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
         http_response_code(200);
         exit();
     }
 }
 
+=======
+>>>>>>> dev
 $host = 'DESKTOP-83A2G7T\SQLEXPRESS';
 $db   = 'university_db';
 

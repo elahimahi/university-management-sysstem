@@ -57,6 +57,7 @@ try {
         exit();
     }
 
+<<<<<<< HEAD
     $semester = $data['semester'] ?? date('Y') . '-' . (date('n') > 6 ? 'Fall' : 'Spring');
     $grade = $data['grade'] ?? '?';
     $points = $data['grade_point'];
@@ -97,6 +98,30 @@ try {
             'points' => $points
         ]);
     }
+=======
+    // Insert or update the grade
+    $stmt = $pdo->prepare("
+        INSERT INTO grades (student_id, course_id, grade, points, semester, assigned_at) 
+        VALUES (?, ?, ?, ?, ?, GETDATE())
+    ");
+    $stmt->execute([
+        $student_id,
+        $course_id,
+        $data['grade'] ?? '?',
+        $data['grade_point'],
+        $data['semester'] ?? date('Y') . '-' . (date('n') > 6 ? 'Fall' : 'Spring')
+    ]);
+
+    http_response_code(201);
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Grade recorded successfully',
+        'student_id' => $student_id,
+        'course_id' => $course_id,
+        'grade' => $data['grade'],
+        'points' => $data['grade_point']
+    ]);
+>>>>>>> dev
 
 } catch (PDOException $e) {
     http_response_code(500);

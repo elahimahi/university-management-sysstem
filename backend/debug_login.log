@@ -13,6 +13,7 @@ Login attempt: Email: mahi@gmail.com | Password: 123456ashes | Role: student
 Login attempt: Email: superadmin@university.edu | Password: superadmin123 | Role: admin
 Login attempt: Email: superadmin@university.edu | Password: superadmin123 | Role: admin
 Login attempt: Email: mahi@gmail.com | Password: 123456ashes | Role: student
+<<<<<<< HEAD
 Login attempt: Email: superadmin@university.edu | Password: superadmin123 | Role: admin
 Login attempt: Email: superadmin@university.edu | Password: superadmin123 | Role: admin
 Login attempt: Email: mahi@gmail.com | Password: 123456ashes | Role: student
@@ -62,3 +63,5 @@ Login attempt: Email: assssbhai@gmail.com | Password: 123456ashes | Role: facult
 Login attempt: Email: superadmin@university.edu | Password: superadmin123 | Role: admin
 Login attempt: Email: mahi@gmail.com | Password: 123456ashes | Role: student
 Login attempt: Email: superadmin@university.edu | Password: superadmin123 | Role: admin
+=======
+>>>>>>> dev

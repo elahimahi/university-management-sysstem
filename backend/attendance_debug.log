@@ -65,6 +65,7 @@
     Record 0: enrollment_id=22, status=present
       ✓ Inserted
   Success: 1 inserted, 0 skipped
+<<<<<<< HEAD
 
 2026-04-04 20:13:09 - Received data: {"course_id":23,"date":"2026-04-04","records":[{"enrollment_id":"23","student_name":"Kop Siam","student_id":"38","course_id":23,"course_code":"","date":"2026-04-04","status":"present"}]}
   Processing 1 records for course 23 on 2026-04-04
@@ -91,3 +92,5 @@
     Record 1: enrollment_id=23, status=present
       ✓ Inserted
   Success: 2 inserted, 0 skipped
+=======
+>>>>>>> dev

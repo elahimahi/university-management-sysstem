@@ -119,6 +119,41 @@ try {
         ]);
     }
 
+<<<<<<< HEAD
+=======
+    // Send SMS notification
+    $sms_service = new SMSService($pdo);
+    
+    // Get student details
+    $student_phone = $sms_service->getStudentPhone($student_id);
+    $student_name = $sms_service->getStudentName($student_id);
+    
+    $sms_result = null;
+    if ($student_phone) {
+        $sms_result = $sms_service->sendPaymentConfirmation(
+            $student_phone,
+            $student_name,
+            $amount_paid,
+            $payment_method,
+            max(0, $fee_amount - $total_paid),
+            $student_id
+        );
+    }
+
+    http_response_code(200);
+    echo json_encode([
+        'success' => true,
+        'message' => 'Payment recorded successfully',
+        'payment_id' => $payment_id,
+        'amount_paid' => $amount_paid,
+        'payment_method' => strtoupper($payment_method),
+        'fee_status' => $new_status,
+        'remaining_amount' => max(0, $fee_amount - $total_paid),
+        'total_paid' => $total_paid,
+        'sms_notification' => $sms_result ?? ['success' => false, 'message' => 'No phone number available']
+    ]);
+
+>>>>>>> dev
 } catch (Exception $e) {
     error_log('Payment processing error: ' . $e->getMessage() . ' Stack: ' . $e->getTraceAsString());
     http_response_code(500);

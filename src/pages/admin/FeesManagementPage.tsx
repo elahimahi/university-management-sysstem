@@ -78,8 +78,13 @@ const FeesManagementPage: React.FC = () => {
 
     const amount = formData.amount ? parseFloat(formData.amount as string) : null;
 
+<<<<<<< HEAD
     if (!amount || !formData.description || !formData.due_date || !formData.status) {
       setError('Description, amount, date, and status are required');
+=======
+    if (!amount || !formData.description || !formData.semester || !formData.due_date || !formData.status) {
+      setError('Description, amount, semester, date, and status are required');
+>>>>>>> dev
       return;
     }
 
@@ -370,7 +375,11 @@ const FeesManagementPage: React.FC = () => {
         {showForm && (
           <div className="bg-slate-800/50 border border-slate-600 rounded-lg p-6 mb-8">
             <form onSubmit={handleSubmit}>
+<<<<<<< HEAD
               <p className="text-sm text-slate-300 mb-4">Fill Up The Form  and Click Create Fee </p>
+=======
+              <p className="text-sm text-slate-300 mb-4">নতুন ফি তৈরি করতে উপরের ফর্ম পূরণ করুন এবং Create Fee বাটনে ক্লিক করুন।</p>
+>>>>>>> dev
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <input
                   type="text"
@@ -398,6 +407,15 @@ const FeesManagementPage: React.FC = () => {
                   required
                 />
 
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="bg-slate-700/50 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-purple-500"
+                  required
+                >
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
+                </select>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -439,7 +457,7 @@ const FeesManagementPage: React.FC = () => {
                 <tbody className="divide-y divide-slate-700">
                   {filteredFees.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
+                      <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
                         No fees found
                       </td>
                     </tr>

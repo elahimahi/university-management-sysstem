@@ -202,10 +202,13 @@ try {
             require_once 'admin/delete_course.php';
         } elseif ($action === 'courses-stats' && $requestMethod === 'GET') {
             require_once 'admin/get_courses_stats.php';
+<<<<<<< HEAD
         } elseif ($action === 'notifications' && $requestMethod === 'GET') {
             require_once 'admin/get_notifications.php';
         } elseif ($action === 'mark-notification-read' && $requestMethod === 'POST') {
             require_once 'admin/mark_notification_read.php';
+=======
+>>>>>>> dev
         }
     }
     // Payment Routes

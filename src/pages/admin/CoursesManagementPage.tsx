@@ -11,7 +11,10 @@ import {
   Check,
   X
 } from 'lucide-react';
+<<<<<<< HEAD
 import { motion } from 'framer-motion';
+=======
+>>>>>>> dev
 import { apiService } from '../../services/api.service';
 
 interface Course {
@@ -137,7 +140,11 @@ const CoursesManagementPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+<<<<<<< HEAD
     const normalizedCode = normalizeCourseCode(formData.code);
+=======
+    const normalizedCode = formData.code.trim().toUpperCase();
+>>>>>>> dev
     const normalizedName = formData.name.trim();
 
     if (!normalizedCode || !normalizedName) {
@@ -145,14 +152,29 @@ const CoursesManagementPage: React.FC = () => {
       return;
     }
 
+<<<<<<< HEAD
     const existingDuplicate = checkDuplicateCourse(normalizedCode);
 
     if (existingDuplicate && !editingCourse) {
       setError(`Course code "${normalizedCode}" already exists.`);
+=======
+    const existingCourse = courses.find(c => c.code.trim().toLowerCase() === normalizedCode.toLowerCase());
+    if (existingCourse && !editingCourse) {
+      setError('Course code already exists');
+      return;
+    }
+
+    if (editingCourse && existingCourse && existingCourse.id !== editingCourse.id) {
+      setError('Course code already exists');
+>>>>>>> dev
       return;
     }
 
     try {
+<<<<<<< HEAD
+=======
+      let response;
+>>>>>>> dev
       const payload = {
         ...formData,
         code: normalizedCode,
@@ -160,16 +182,26 @@ const CoursesManagementPage: React.FC = () => {
       };
 
       if (editingCourse) {
+<<<<<<< HEAD
         await apiService.post<CourseActionResponse>('/admin/update-course', { ...payload, id: editingCourse.id });
         setSuccess('✅ Course updated!');
       } else {
         await apiService.post<CourseActionResponse>('/admin/create-course', payload);
+=======
+        response = await apiService.post<CourseActionResponse>('/admin/update-course', { ...payload, id: editingCourse.id });
+        setSuccess('✅ Course updated!');
+      } else {
+        response = await apiService.post<CourseActionResponse>('/admin/create-course', payload);
+>>>>>>> dev
         setSuccess('✅ Course created!');
       }
       
       setShowForm(false);
       setEditingCourse(null);
+<<<<<<< HEAD
       setDuplicateCourse(null);
+=======
+>>>>>>> dev
       setFormData({
         code: '',
         name: '',
@@ -178,6 +210,7 @@ const CoursesManagementPage: React.FC = () => {
         level: 'Undergraduate',
         instructor_id: 0,
       });
+<<<<<<< HEAD
       await fetchCourses();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
@@ -187,6 +220,13 @@ const CoursesManagementPage: React.FC = () => {
       } else {
         setError(errorMessage);
       }
+=======
+      fetchCourses();
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to save course';
+      setError(errorMessage);
+>>>>>>> dev
       console.error('Course save error:', errorMessage, err);
     }
   };

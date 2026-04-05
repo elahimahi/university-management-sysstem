@@ -67,7 +67,11 @@ try {
     
     file_put_contents($logFile, "  Found " . count($enrollments) . " enrollments for course $course_id\n", FILE_APPEND);
 
+<<<<<<< HEAD
     // Insert or update attendance records
+=======
+    // Insert new records using enrollment_id
+>>>>>>> dev
     $insertQuery = "INSERT INTO attendance (enrollment_id, date, status) VALUES (?, ?, ?)";
     $insertStmt = $pdo->prepare($insertQuery);
     
@@ -100,13 +104,17 @@ try {
         file_put_contents($logFile, "    Record $idx: enrollment_id=$enrollmentId, status=$status\n", FILE_APPEND);
 
         try {
+<<<<<<< HEAD
             // Try to insert new record
+=======
+>>>>>>> dev
             $result = $insertStmt->execute([$enrollmentId, $date, $status]);
             if ($result) {
                 $inserted++;
                 file_put_contents($logFile, "      ✓ Inserted\n", FILE_APPEND);
             }
         } catch (PDOException $e) {
+<<<<<<< HEAD
             // If duplicate key violation, update instead
             $error_msg = strtoupper($e->getMessage());
             if (strpos($error_msg, 'UNIQUE') !== false || strpos($error_msg, 'DUPLICATE') !== false) {
@@ -121,6 +129,10 @@ try {
             } else {
                 file_put_contents($logFile, "      Error: " . $e->getMessage() . "\n", FILE_APPEND);
             }
+=======
+            file_put_contents($logFile, "      Error: " . $e->getMessage() . "\n", FILE_APPEND);
+            // Continue with next record
+>>>>>>> dev
         }
     }
 
