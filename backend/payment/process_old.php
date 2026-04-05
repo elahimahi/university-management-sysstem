@@ -25,9 +25,10 @@ $fee_id = $data['fee_id'] ?? null;
 $student_id = $data['student_id'] ?? null;
 $amount_paid = $data['amount_paid'] ?? null;
 $payment_method = $data['payment_method'] ?? null;
-$phone = $data['phone'] ?? null;
+$pin = $data['pin'] ?? null;
+$card_number = $data['card_number'] ?? null;
 
-if (!$fee_id || !$student_id || !$amount_paid || !$payment_method || !$phone) {
+if (!$fee_id || !$student_id || !$amount_paid || !$payment_method) {
     http_response_code(400);
     echo json_encode(['error' => 'Missing required fields: fee_id, student_id, amount_paid, payment_method']);
     exit;
@@ -76,14 +77,6 @@ try {
         exit;
     }
 
-    // Validate phone number
-    $phone = preg_replace('/\D/', '', $phone);
-    if (!preg_match('/^(01\d{9})$/', $phone)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid phone number. Use Bangladeshi mobile number format 01XXXXXXXXX']);
-        exit;
-    }
-
     // Initialize payment gateway
     $gatewayFactory = new PaymentGatewayFactory($pdo);
     $gateway = $gatewayFactory->createGateway($payment_method);
@@ -94,7 +87,8 @@ try {
         'student_id' => $student_id,
         'fee_id' => $fee_id,
         'payment_method' => strtolower($payment_method),
-        'phone' => $phone,
+        'pin' => $pin,
+        'card_number' => $card_number
     ];
 
     // Initiate payment with gateway
@@ -119,8 +113,120 @@ try {
         ]);
     }
 
-<<<<<<< HEAD
-=======
+} catch (Exception $e) {
+    error_log('Payment processing error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'Payment processing failed', 'details' => $e->getMessage()]);
+}
+?>
+        http_response_code(403);
+        echo json_encode(['error' => 'Fee not found or does not belong to this student']);
+        exit;
+    }
+
+    $fee_amount = (float)$fee['amount'];
+
+    // Check if fee is already fully paid
+    $total_paid_stmt = $pdo->prepare('SELECT SUM(amount_paid) as total FROM payments WHERE fee_id = ?');
+    $total_paid_stmt->execute([$fee_id]);
+    $result = $total_paid_stmt->fetch();
+    $total_paid = (float)($result['total'] ?? 0);
+    $remaining_amount = $fee_amount - $total_paid;
+
+    if ($remaining_amount <= 0) {
+        http_response_code(400);
+        echo json_encode(['error' => 'This fee has already been fully paid']);
+        exit;
+    }
+
+    $amount_paid = (float)$amount_paid;
+
+    if ($amount_paid <= 0 || $amount_paid > $remaining_amount) {
+        http_response_code(400);
+        echo json_encode(['error' => "Payment amount must be between 0 and {$remaining_amount} (remaining amount)"]);
+        exit;
+    }
+
+    // For bKash/Nagad/Rocket, validate PIN
+    if (in_array(strtolower($payment_method), ['bkash', 'nagad', 'rocket'])) {
+        if (!$pin) {
+            http_response_code(400);
+            echo json_encode(['error' => 'PIN required for ' . ucfirst($payment_method)]);
+            exit;
+        }
+        
+        // Basic PIN validation (4 digits)
+        if (!preg_match('/^\d{4}$/', $pin)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid PIN. Use 4 digits.']);
+            exit;
+        }
+    }
+
+    // For card, validate card number
+    if (strtolower($payment_method) === 'card') {
+        if (!$card_number) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Card number required for card payment']);
+            exit;
+        }
+        
+        // Basic card number validation (16 digits)
+        if (!preg_match('/^\d{16}$/', $card_number)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid card number. Use 16 digits.']);
+            exit;
+        }
+    }
+
+    // Record payment
+    $payment_stmt = $pdo->prepare('
+        INSERT INTO payments (fee_id, amount_paid, payment_date, payment_method)
+        VALUES (?, ?, GETDATE(), ?)
+    ');
+    $payment_stmt->execute([$fee_id, $amount_paid, strtolower($payment_method)]);
+    
+    $payment_id = $pdo->lastInsertId();
+
+    // Get fee details for notification
+    $fee_detail_stmt = $pdo->prepare('SELECT description, amount FROM fees WHERE id = ?');
+    $fee_detail_stmt->execute([$fee_id]);
+    $fee_detail = $fee_detail_stmt->fetch();
+
+    $payment_note = $amount_paid < $remaining_amount ? 'Partial payment' : 'Payment completed';
+    $notification_description = sprintf(
+        '%s for %s',
+        $payment_note,
+        $fee_detail['description'] ?? 'Fee Payment'
+    );
+
+    // Try to create admin notification (non-blocking - won't fail payment if notification fails)
+    try {
+        $notify_stmt = $pdo->prepare('
+            INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ');
+        $notify_stmt->execute([$student_id, $fee_id, $amount_paid, strtolower($payment_method), $notification_description, 'unread']);
+    } catch (Exception $notifyError) {
+        // Log but don't fail payment if notification insertion fails
+        error_log("Admin notification creation failed: " . $notifyError->getMessage());
+    }
+
+    // Check if fee is fully paid
+    $total_paid_stmt = $pdo->prepare('SELECT SUM(amount_paid) as total FROM payments WHERE fee_id = ?');
+    $total_paid_stmt->execute([$fee_id]);
+    $result = $total_paid_stmt->fetch();
+    $total_paid = (float)($result['total'] ?? 0);
+
+    // Update fee status if fully paid
+    if ($total_paid >= $fee_amount) {
+        $update_stmt = $pdo->prepare('UPDATE fees SET status = ? WHERE id = ?');
+        $update_stmt->execute(['paid', $fee_id]);
+        $new_status = 'paid';
+    } else {
+        $new_status = 'pending';
+    }
+
     // Send SMS notification
     $sms_service = new SMSService($pdo);
     
@@ -153,10 +259,8 @@ try {
         'sms_notification' => $sms_result ?? ['success' => false, 'message' => 'No phone number available']
     ]);
 
->>>>>>> dev
 } catch (Exception $e) {
-    error_log('Payment processing error: ' . $e->getMessage() . ' Stack: ' . $e->getTraceAsString());
     http_response_code(500);
-    echo json_encode(['error' => 'Payment processing failed', 'details' => $e->getMessage()]);
+    echo json_encode(['error' => 'Server error', 'details' => $e->getMessage()]);
 }
 ?>

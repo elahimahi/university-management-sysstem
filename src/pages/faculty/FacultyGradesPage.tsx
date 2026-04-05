@@ -40,6 +40,7 @@ const FacultyGradesPage: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [gradeInputs, setGradeInputs] = useState<{ [key: number]: string }>({});
   const [submitting, setSubmitting] = useState(false);
+  const totalStudents = courses.reduce((sum, course) => sum + course.students.length, 0);
 
   useEffect(() => {
     fetchStudents();
@@ -139,39 +140,67 @@ const FacultyGradesPage: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gradient-to-br from-white to-gray-50 dark:from-navy-900 dark:to-navy-800 p-8"
+      className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-8"
     >
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <BookOpen className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-3xl font-bold">Grade Management</h1>
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-blue-700 via-slate-900 to-slate-950 text-white p-8 shadow-[0_35px_120px_rgba(30,58,138,0.25)] mb-10">
+          <div className="absolute -right-24 -top-20 h-72 w-72 rounded-full bg-sky-400/20 blur-3xl" />
+          <div className="absolute -left-24 -bottom-12 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
+          <div className="relative">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <BookOpen className="w-8 h-8 text-cyan-200" />
+                  <h1 className="text-4xl font-bold">Grade Management</h1>
+                </div>
+                <p className="text-slate-200 max-w-2xl">
+                  Mark grades with elegant controls, student search, and animated course cards.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="rounded-3xl bg-white/10 border border-white/10 p-4 text-center">
+                  <p className="text-sm uppercase tracking-[0.2em] text-slate-300">Courses</p>
+                  <p className="text-3xl font-semibold text-white">{courses.length}</p>
+                </div>
+                <div className="rounded-3xl bg-white/10 border border-white/10 p-4 text-center">
+                  <p className="text-sm uppercase tracking-[0.2em] text-slate-300">Students</p>
+                  <p className="text-3xl font-semibold text-white">{totalStudents}</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-600 dark:text-gray-300">
-            Mark grades for your students. Enter GPA (0-4.0) to record final scores.
-          </p>
         </div>
 
         {/* Search Bar */}
-        <div className="mb-6">
+        <div className="mb-6 space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-[2rem] bg-slate-900/90 border border-slate-700 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.35)]">
+              <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Total Courses</p>
+              <p className="mt-3 text-3xl font-semibold text-white">{courses.length}</p>
+            </div>
+            <div className="rounded-[2rem] bg-slate-900/90 border border-slate-700 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.35)]">
+              <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Enrolled Students</p>
+              <p className="mt-3 text-3xl font-semibold text-white">{totalStudents}</p>
+            </div>
+          </div>
           <div className="relative">
-            <Search className="absolute left-4 top-3 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-4 w-5 h-5 text-slate-400" />
             <input
               type="text"
               placeholder="Search by student name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border rounded-lg dark:bg-navy-800 dark:border-navy-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-12 pr-4 py-4 rounded-[2rem] bg-slate-900 border border-slate-700 text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
         </div>
 
         {/* Courses and Students */}
         {filteredCourses.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 dark:bg-navy-800 rounded-lg">
-            <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-lg text-gray-600 dark:text-gray-400">
+          <div className="text-center py-12 bg-slate-900 rounded-[2rem] border border-slate-700 text-slate-300">
+            <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <p className="text-lg text-slate-200">
               {searchTerm ? 'No students found matching your search.' : 'No students enrolled in your courses yet.'}
             </p>
           </div>
@@ -182,7 +211,9 @@ const FacultyGradesPage: React.FC = () => {
                 key={course.course_id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-navy-800 rounded-xl shadow-lg border border-gray-100 dark:border-navy-700 overflow-hidden"
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.25 }}
+                className="bg-white dark:bg-navy-800 rounded-[2rem] shadow-xl border border-gray-100 dark:border-navy-700 overflow-hidden"
               >
                 {/* Course Header */}
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">

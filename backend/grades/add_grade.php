@@ -57,6 +57,48 @@ try {
         exit();
     }
 
+<<<<<<< HEAD
+    $semester = $data['semester'] ?? date('Y') . '-' . (date('n') > 6 ? 'Fall' : 'Spring');
+    $grade = $data['grade'] ?? '?';
+    $points = $data['grade_point'];
+
+    // Try to insert the grade
+    $inserted = false;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO grades (student_id, course_id, grade, points, semester, assigned_at) 
+            VALUES (?, ?, ?, ?, ?, GETDATE())
+        ");
+        $stmt->execute([$student_id, $course_id, $grade, $points, $semester]);
+        $inserted = true;
+    } catch (PDOException $e) {
+        // If duplicate key violation, update instead
+        $error_msg = strtoupper($e->getMessage());
+        if (strpos($error_msg, 'UNIQUE') !== false || strpos($error_msg, 'UQ_GRADE') !== false) {
+            $update_stmt = $pdo->prepare("
+                UPDATE grades 
+                SET grade = ?, points = ?, assigned_at = GETDATE() 
+                WHERE student_id = ? AND course_id = ? AND semester = ?
+            ");
+            $update_stmt->execute([$grade, $points, $student_id, $course_id, $semester]);
+            $inserted = true;
+        } else {
+            throw $e; // Re-throw if it's a different error
+        }
+    }
+
+    if ($inserted) {
+        http_response_code(201);
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Grade recorded successfully',
+            'student_id' => $student_id,
+            'course_id' => $course_id,
+            'grade' => $grade,
+            'points' => $points
+        ]);
+    }
+=======
     // Insert or update the grade
     $stmt = $pdo->prepare("
         INSERT INTO grades (student_id, course_id, grade, points, semester, assigned_at) 
@@ -79,6 +121,7 @@ try {
         'grade' => $data['grade'],
         'points' => $data['grade_point']
     ]);
+>>>>>>> dev
 
 } catch (PDOException $e) {
     http_response_code(500);

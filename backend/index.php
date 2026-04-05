@@ -202,12 +202,23 @@ try {
             require_once 'admin/delete_course.php';
         } elseif ($action === 'courses-stats' && $requestMethod === 'GET') {
             require_once 'admin/get_courses_stats.php';
+<<<<<<< HEAD
+        } elseif ($action === 'notifications' && $requestMethod === 'GET') {
+            require_once 'admin/get_notifications.php';
+        } elseif ($action === 'mark-notification-read' && $requestMethod === 'POST') {
+            require_once 'admin/mark_notification_read.php';
+=======
+>>>>>>> dev
         }
     }
     // Payment Routes
     elseif ($controller === 'payment') {
         if ($action === 'process' && $requestMethod === 'POST') {
             require_once 'payment/process.php';
+        } elseif ($action === 'verify' && $requestMethod === 'POST') {
+            require_once 'payment/verify.php';
+        } elseif ($action === 'webhook' && $requestMethod === 'POST') {
+            require_once 'payment/webhook.php';
         } elseif ($action === 'history' && $requestMethod === 'GET') {
             require_once 'payment/history.php';
         } elseif ($action === 'send-reminder' && in_array($requestMethod, ['GET', 'POST'])) {
@@ -304,6 +315,10 @@ try {
                 ],
                 'Records' => [
                     'GET /records/all'
+                ],
+                'Admin' => [
+                    'GET /admin/notifications',
+                    'POST /admin/mark-notification-read'
                 ]
             ]
         ]);

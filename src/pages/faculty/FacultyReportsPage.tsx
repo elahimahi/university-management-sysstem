@@ -103,15 +103,57 @@ const FacultyReportsPage: React.FC = () => {
       transition={{ duration: 0.3 }}
       className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-navy-900 dark:to-navy-800 p-8"
     >
-      <div className="max-width mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">📊 Faculty Reports</h1>
-          <p className="text-gray-600 dark:text-gray-300">Submission and grading analytics from SQL Server</p>
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-8 mb-10 shadow-[0_35px_120px_rgba(79,70,229,0.2)]">
+          <div className="absolute -right-24 -top-16 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl" />
+          <div className="absolute -left-24 -bottom-10 h-64 w-64 rounded-full bg-violet-400/10 blur-3xl" />
+          <div className="relative">
+            <h1 className="text-4xl font-bold text-white mb-3">📊 Faculty Reports</h1>
+            <p className="text-slate-200">Submission and grading analytics from SQL Server, presented in a modern, animated dashboard.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-[2rem] bg-white border border-slate-200 p-6 shadow-xl"
+          >
+            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Assignments</p>
+            <p className="mt-3 text-3xl font-semibold text-slate-900">{stats.total_assignments}</p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-[2rem] bg-white border border-slate-200 p-6 shadow-xl"
+          >
+            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Submissions</p>
+            <p className="mt-3 text-3xl font-semibold text-slate-900">{stats.total_submissions}</p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="rounded-[2rem] bg-white border border-slate-200 p-6 shadow-xl"
+          >
+            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Pending Grading</p>
+            <p className="mt-3 text-3xl font-semibold text-slate-900">{stats.pending_grading}</p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="rounded-[2rem] bg-white border border-slate-200 p-6 shadow-xl"
+          >
+            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Submission Rate</p>
+            <p className="mt-3 text-3xl font-semibold text-slate-900">{stats.overall_submission_rate.toFixed(0)}%</p>
+          </motion.div>
         </div>
 
         {/* Submissions Table */}
-        <Card>
+        <Card className="shadow-2xl border border-slate-200 dark:border-navy-700">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle size={20} />
@@ -175,7 +217,7 @@ const FacultyReportsPage: React.FC = () => {
         </Card>
 
         {/* SQL Server Database Stats */}
-        <Card className="mt-8">
+        <Card className="mt-8 shadow-2xl border border-slate-200 dark:border-navy-700">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart size={20} />
@@ -238,7 +280,7 @@ const FacultyReportsPage: React.FC = () => {
 
         {/* Refresh Button */}
         <div className="mt-8 flex justify-center gap-4">
-          <Button onClick={loadReportData} className="flex items-center gap-2">
+          <Button onClick={loadReportData} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
             🔄 Refresh Reports & SQL Data
           </Button>
         </div>
