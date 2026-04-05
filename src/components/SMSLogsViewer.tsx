@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 
 interface SMSLog {
   id: number;
+  student_id?: number | null;
   phone_number: string;
   message: string;
   sms_type: string;
@@ -206,6 +207,9 @@ const SMSLogsViewer: React.FC = () => {
                   Status
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Student ID
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Phone
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -230,6 +234,9 @@ const SMSLogsViewer: React.FC = () => {
                       {getStatusIcon(log.status)}
                       <span className="ml-2 text-sm font-medium capitalize">{log.status}</span>
                     </div>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    {log.student_id ?? '—'}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {log.phone_number}

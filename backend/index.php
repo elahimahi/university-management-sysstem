@@ -9,12 +9,14 @@
  * All endpoints return JSON responses.
  */
 
-// Enable CORS for all requests
-header("Access-Control-Allow-Origin: *"); // Allow all origins for testing purposes
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Access-Control-Allow-Credentials: true");
-header("Content-Type: application/json; charset=UTF-8");
+// Enable CORS for all requests - CRITICAL ORDER
+http_response_code(200);
+header("Access-Control-Allow-Origin: *", true);
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH", true);
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Origin, Accept", true);
+header("Access-Control-Allow-Credentials: true", true);
+header("Access-Control-Max-Age: 86400", true);
+header("Content-Type: application/json; charset=UTF-8", true);
 
 // Handle preflight requests immediately
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -27,7 +29,7 @@ $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 // Strip the base path for Apache
-$basePath = '/Database_Project/Database-main/Database-main/backend';
+$basePath = '/Database_Project/university-management-sysstem/backend';
 if (strpos($requestUri, $basePath) === 0) {
     $requestUri = substr($requestUri, strlen($basePath));
 }
@@ -162,6 +164,16 @@ try {
     elseif ($controller === 'admin') {
         if ($action === 'init-demo' && $requestMethod === 'POST') {
             require_once 'admin/init_demo.php';
+        } elseif ($action === 'get-all-users' && $requestMethod === 'GET') {
+            require_once 'admin/get_all_users.php';
+        } elseif ($action === 'delete-user' && $requestMethod === 'DELETE') {
+            require_once 'admin/delete_user.php';
+        } elseif ($action === 'approve-user' && $requestMethod === 'POST') {
+            require_once 'admin/approve_user.php';
+        } elseif ($action === 'reject-user' && $requestMethod === 'POST') {
+            require_once 'admin/reject_user.php';
+        } elseif ($action === 'get-pending-registrations' && $requestMethod === 'GET') {
+            require_once 'admin/get_pending_registrations.php';
         } elseif ($action === 'fees' && $requestMethod === 'GET') {
             require_once 'admin/get_fees.php';
         } elseif ($action === 'create-fee' && $requestMethod === 'POST') {
@@ -180,12 +192,30 @@ try {
             require_once 'admin/send_deadline_reminders.php';
         } elseif ($action === 'run-fee-batch-job' && $requestMethod === 'POST') {
             require_once 'admin/run_fee_batch_job.php';
+        } elseif ($action === 'courses' && $requestMethod === 'GET') {
+            require_once 'admin/get_all_courses.php';
+        } elseif ($action === 'create-course' && $requestMethod === 'POST') {
+            require_once 'admin/create_course.php';
+        } elseif ($action === 'update-course' && in_array($requestMethod, ['PUT', 'POST'])) {
+            require_once 'admin/update_course.php';
+        } elseif ($action === 'delete-course' && $requestMethod === 'DELETE') {
+            require_once 'admin/delete_course.php';
+        } elseif ($action === 'courses-stats' && $requestMethod === 'GET') {
+            require_once 'admin/get_courses_stats.php';
+        } elseif ($action === 'notifications' && $requestMethod === 'GET') {
+            require_once 'admin/get_notifications.php';
+        } elseif ($action === 'mark-notification-read' && $requestMethod === 'POST') {
+            require_once 'admin/mark_notification_read.php';
         }
     }
     // Payment Routes
     elseif ($controller === 'payment') {
         if ($action === 'process' && $requestMethod === 'POST') {
             require_once 'payment/process.php';
+        } elseif ($action === 'verify' && $requestMethod === 'POST') {
+            require_once 'payment/verify.php';
+        } elseif ($action === 'webhook' && $requestMethod === 'POST') {
+            require_once 'payment/webhook.php';
         } elseif ($action === 'history' && $requestMethod === 'GET') {
             require_once 'payment/history.php';
         } elseif ($action === 'send-reminder' && in_array($requestMethod, ['GET', 'POST'])) {
@@ -282,6 +312,10 @@ try {
                 ],
                 'Records' => [
                     'GET /records/all'
+                ],
+                'Admin' => [
+                    'GET /admin/notifications',
+                    'POST /admin/mark-notification-read'
                 ]
             ]
         ]);

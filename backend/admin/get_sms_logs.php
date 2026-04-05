@@ -14,7 +14,7 @@ try {
 
     // Get SMS logs
     $stmt = $pdo->prepare('
-        SELECT id, phone_number, message, sms_type, sent_at, status, provider, created_at
+        SELECT id, student_id, phone_number, message, sms_type, sent_at, status, provider, created_at
         FROM sms_logs
         ORDER BY COALESCE(sent_at, created_at) DESC, id DESC
         OFFSET ? ROWS

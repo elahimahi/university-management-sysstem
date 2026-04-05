@@ -38,7 +38,7 @@ foreach ($requiredFields as $field) {
     }
 }
 
-$code = trim($data['code']);
+$code = strtoupper(preg_replace('/\s+/', ' ', trim($data['code'])));
 $name = trim($data['name']);
 $credits = (int)$data['credits'];
 $category = isset($data['category']) ? trim($data['category']) : null;
@@ -52,8 +52,14 @@ if ($credits < 1 || $credits > 6) {
 }
 
 try {
-    // Check if course code already exists
-    $stmt = $pdo->prepare("SELECT id FROM courses WHERE code = ?");
+    if ($code === '') {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Course code is required']);
+        exit();
+    }
+
+    // Check if course code already exists (case-insensitive, ignoring spaces)
+    $stmt = $pdo->prepare("SELECT id FROM courses WHERE REPLACE(LOWER(LTRIM(RTRIM(code))), ' ', '') = REPLACE(LOWER(LTRIM(RTRIM(?))), ' ', '')");
     $stmt->execute([$code]);
     if ($stmt->fetch()) {
         http_response_code(409);

@@ -1,0 +1,93 @@
+
+2026-04-03 06:31:36 - Received data: {"date":"2026-04-03","course_id":1,"records":[{"course_code":"CS101","enrollment_id":1,"student_name":"John Doe","date":"2026-04-03","student_id":1,"status":"present","course_id":1}]}
+  Processing 1 records
+  Delete error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'course_id'.
+    Record 0: student_id=1, status=present
+    Insert error for 1: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+  Success: 0 inserted, 0 skipped
+
+2026-04-03 06:31:45 - Received data: {"course_id":1,"date":"2026-04-03","records":[{"student_id":1,"status":"present"}]}
+  Processing 1 records
+  Delete error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'course_id'.
+    Record 0: student_id=1, status=present
+    Insert error for 1: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+  Success: 0 inserted, 0 skipped
+
+2026-04-03 06:32:34 - Received data: {"course_id":5,"date":"2026-04-03","records":[{"student_id":1,"status":"present"}]}
+  Processing 1 records
+  Delete error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'course_id'.
+    Record 0: student_id=1, status=present
+    Insert error for 1: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+  Success: 0 inserted, 0 skipped
+
+2026-04-03 06:34:23 - Received data: {"course_id":8,"date":"2026-04-03","records":[{"enrollment_id":"19","student_name":"Mu Fazil","student_id":"17","course_id":8,"course_code":"","date":"2026-04-03","status":"present"}]}
+  Processing 1 records for course 8 on 2026-04-03
+  Deleted existing records
+  Found 2 enrollments for course 8
+    Record 0: enrollment_id=19, status=present
+      ✓ Inserted
+  Success: 1 inserted, 0 skipped
+
+2026-04-03 06:35:11 - Received data: null
+
+2026-04-03 06:35:12 - Received data: {"course_id":8,"date":"2026-04-03","records":[{"enrollment_id":"19","student_name":"Mu Fazil","student_id":"17","course_id":8,"course_code":"","date":"2026-04-03","status":"present"},{"enrollment_id":"7","student_name":"New User","student_id":"1","course_id":8,"course_code":"","date":"2026-04-03","status":"late"}]}
+  Processing 2 records for course 8 on 2026-04-03
+  Deleted existing records
+  Found 2 enrollments for course 8
+    Record 0: enrollment_id=19, status=present
+      ✓ Inserted
+    Record 1: enrollment_id=7, status=late
+      ✓ Inserted
+  Success: 2 inserted, 0 skipped
+
+2026-04-03 06:35:25 - Received data: {"course_id":5,"date":"2026-04-03","records":[{"student_id":1,"status":"present"}]}
+  Processing 1 records for course 5 on 2026-04-03
+  Deleted existing records
+  Found 2 enrollments for course 5
+    Record 0: enrollment_id=1, status=present
+      ✓ Inserted
+  Success: 1 inserted, 0 skipped
+
+2026-04-03 06:38:15 - Received data: {"course_id":10,"date":"2026-04-03","records":[{"enrollment_id":"15","student_name":"Mu Fazil","student_id":"17","course_id":10,"course_code":"","date":"2026-04-03","status":"present"},{"enrollment_id":"9","student_name":"New User","student_id":"1","course_id":10,"course_code":"","date":"2026-04-03","status":"present"}]}
+  Processing 2 records for course 10 on 2026-04-03
+  Deleted existing records
+  Found 2 enrollments for course 10
+    Record 0: enrollment_id=15, status=present
+      ✓ Inserted
+    Record 1: enrollment_id=9, status=present
+      ✓ Inserted
+  Success: 2 inserted, 0 skipped
+
+2026-04-04 11:46:55 - Received data: {"course_id":23,"date":"2026-04-04","records":[{"enrollment_id":"22","student_name":"Mu Fazil","student_id":"17","course_id":23,"course_code":"","date":"2026-04-04","status":"present"}]}
+  Processing 1 records for course 23 on 2026-04-04
+  Deleted existing records
+  Found 1 enrollments for course 23
+    Record 0: enrollment_id=22, status=present
+      ✓ Inserted
+  Success: 1 inserted, 0 skipped
+
+2026-04-04 20:13:09 - Received data: {"course_id":23,"date":"2026-04-04","records":[{"enrollment_id":"23","student_name":"Kop Siam","student_id":"38","course_id":23,"course_code":"","date":"2026-04-04","status":"present"}]}
+  Processing 1 records for course 23 on 2026-04-04
+  Deleted existing records
+  Found 2 enrollments for course 23
+    Record 0: enrollment_id=23, status=present
+      ✓ Inserted
+  Success: 1 inserted, 0 skipped
+
+2026-04-04 21:27:04 - Received data: {"course_id":23,"date":"2026-04-04","records":[{"enrollment_id":"23","student_name":"Kop Siam","student_id":"38","course_id":23,"course_code":"","date":"2026-04-04","status":"present"}]}
+  Processing 1 records for course 23 on 2026-04-04
+  Deleted existing records
+  Found 2 enrollments for course 23
+    Record 0: enrollment_id=23, status=present
+      ✓ Inserted
+  Success: 1 inserted, 0 skipped
+
+2026-04-04 21:27:09 - Received data: {"course_id":23,"date":"2026-04-04","records":[{"enrollment_id":"22","student_name":"Mu Fazil","student_id":"17","course_id":23,"course_code":"","date":"2026-04-04","status":"absent"},{"enrollment_id":"23","student_name":"Kop Siam","student_id":"38","course_id":23,"course_code":"","date":"2026-04-04","status":"present"}]}
+  Processing 2 records for course 23 on 2026-04-04
+  Deleted existing records
+  Found 2 enrollments for course 23
+    Record 0: enrollment_id=22, status=absent
+      ✓ Inserted
+    Record 1: enrollment_id=23, status=present
+      ✓ Inserted
+  Success: 2 inserted, 0 skipped

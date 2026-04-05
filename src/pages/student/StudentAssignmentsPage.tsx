@@ -154,8 +154,8 @@ const StudentAssignmentsPage: React.FC = () => {
                     <div className="space-y-2 pt-2 border-t border-gray-200">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">Grade:</span>
-                        <Badge className={`${getGradeBadgeColor(assignment.grade)} text-white`}>
-                          {assignment.grade.charAt(0).toUpperCase() + assignment.grade.slice(1)}
+                        <Badge className={`${getGradeBadgeColor(assignment.grade || '')} text-white`}>
+                          {assignment.grade ? assignment.grade.charAt(0).toUpperCase() + assignment.grade.slice(1) : 'N/A'}
                         </Badge>
                       </div>
 

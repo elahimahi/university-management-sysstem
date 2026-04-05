@@ -63,6 +63,7 @@ const LoginPage: React.FC = () => {
         let targetPath = '/student/dashboard';
         if (userRole === 'faculty') targetPath = '/faculty/dashboard';
         else if (userRole === 'admin') targetPath = '/admin/dashboard';
+        else if (userRole === 'superadmin') targetPath = '/admin/dashboard';
         navigate(targetPath, { replace: true });
       }, 100);
     } catch (error) {

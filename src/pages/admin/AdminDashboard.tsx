@@ -1,24 +1,76 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import StatsCard from '../../components/ui/StatsCard';
 import Tabs from '../../components/ui/Tabs';
 import Breadcrumbs from '../../components/ui/Breadcrumbs';
-import { UserCog, Database, Settings, Users, BarChart2, ShieldCheck, FileText, RefreshCw, Bell, Key, Activity, LifeBuoy, Server, Lock, DollarSign, ArrowRight, CreditCard } from 'lucide-react';
+import { API_BASE_URL } from '../../constants/app.constants';
+import { UserCog, Database, Settings, Users, BookOpen, BarChart2, ShieldCheck, FileText, RefreshCw, Bell, Key, Activity, LifeBuoy, Server, Lock, DollarSign, ArrowRight, CreditCard } from 'lucide-react';
 import UserManagement from './UserManagement';
 
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = React.useState('users');
+  const [statsData, setStatsData] = useState({
+    totalUsers: 0,
+    totalStudents: 0,
+    totalFaculty: 0,
+    pendingApprovals: 0,
+    totalCourses: 0,
+    totalFees: 0,
+    totalPayments: 0,
+  });
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
 
-  // Example stats (replace with real data from backend)
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setDashboardLoading(true);
+        setDashboardError(null);
+
+        const [usersRes, coursesRes, pendingRes, feesRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/admin/get_users_stats.php`),
+          fetch(`${API_BASE_URL}/admin/get_courses_stats.php`),
+          fetch(`${API_BASE_URL}/admin/get_pending_registrations.php`),
+          fetch(`${API_BASE_URL}/admin/get_fees_stats.php`),
+        ]);
+
+        const usersData = usersRes.ok ? (await usersRes.json()) as any : {};
+        const coursesData = coursesRes.ok ? (await coursesRes.json()) as any : {};
+        const pendingData = pendingRes.ok ? (await pendingRes.json()) as any : { users: [] };
+        const feesData = feesRes.ok ? (await feesRes.json()) as any : {};
+
+        setStatsData({
+          totalUsers: usersData?.total || usersData?.totalUsers || 0,
+          totalStudents: usersData?.students || usersData?.totalStudents || 0,
+          totalFaculty: usersData?.faculty || usersData?.totalFaculty || 0,
+          pendingApprovals: pendingData?.count || pendingData?.users?.length || 0,
+          totalCourses: coursesData?.total || coursesData?.totalCourses || 0,
+          totalFees: feesData?.totalFees || feesData?.total || 0,
+          totalPayments: feesData?.paidFees || feesData?.payments || 0,
+        });
+      } catch (error) {
+        console.error('Dashboard load failed', error);
+        setDashboardError('Unable to load dashboard metrics.');
+      } finally {
+        setDashboardLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   const stats: import('../../components/ui/StatsCard').StatsCardProps[] = [
-    { title: 'Total Users', value: 1243, icon: <Users />, color: 'gold' },
-    { title: 'Active Sessions', value: 87, icon: <UserCog />, color: 'success' },
-    { title: 'DB Tables', value: 18, icon: <Database />, color: 'navy' },
-    { title: 'System Health', value: 99, suffix: '%', icon: <ShieldCheck />, color: 'success' },
+    { title: 'Total Users', value: statsData.totalUsers, icon: <Users />, color: 'gold' },
+    { title: 'Students', value: statsData.totalStudents, icon: <UserCog />, color: 'success' },
+    { title: 'Faculty', value: statsData.totalFaculty, icon: <BookOpen />, color: 'navy' },
+    { title: 'Pending Approvals', value: statsData.pendingApprovals, icon: <Bell />, color: 'warning' },
+    { title: 'Total Courses', value: statsData.totalCourses, icon: <Database />, color: 'gold' },
+    { title: 'Total Fees', value: statsData.totalFees, icon: <DollarSign />, color: 'success' },
+    { title: 'Total Payments', value: statsData.totalPayments, icon: <CreditCard />, color: 'error' },
   ];
 
   // Example tabs for admin features
@@ -125,18 +177,6 @@ const AdminDashboard: React.FC = () => {
           <h2 className="text-2xl font-bold mb-2 flex items-center gap-2"><Settings className="inline-block w-6 h-6 text-green-500 animate-spin-slow" /> Settings</h2>
           <p className="text-gray-500 dark:text-gray-300 mb-4">Manage system settings, theme, security, and notifications.</p>
           <div className="rounded-xl bg-gradient-to-br from-green-500/20 to-green-700/20 border border-green-500/20 p-6 shadow-lg animate-fade-in text-center text-gray-400">[Settings panel coming soon]</div>
-        </div>
-      ),
-    },
-    {
-      id: 'notifications',
-      label: 'Notifications',
-      icon: <Bell />,
-      content: (
-        <div className="space-y-4 animate-fade-in">
-          <h2 className="text-2xl font-bold mb-2 flex items-center gap-2"><Bell className="inline-block w-6 h-6 text-pink-500 animate-bounce" /> Notifications</h2>
-          <p className="text-gray-500 dark:text-gray-300 mb-4">Real-time notifications and alerts for admins.</p>
-          <div className="rounded-xl bg-gradient-to-br from-pink-500/20 to-pink-700/20 border border-pink-500/20 p-6 shadow-lg animate-fade-in text-center text-gray-400">[Notifications center coming soon]</div>
         </div>
       ),
     },
@@ -318,11 +358,21 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-10 px-4 md:px-0">
-        {stats.map((stat) => (
-          <StatsCard key={stat.title} {...stat} />
-        ))}
-      </div>
+{dashboardError && (
+            <div className="mb-6 rounded-xl border border-orange-400/20 bg-orange-500/10 px-4 py-3 text-orange-100">
+              {dashboardError}
+            </div>
+          )}
+          {dashboardLoading && (
+            <div className="mb-6 rounded-xl border border-slate-600/30 bg-slate-900/80 px-4 py-6 text-center text-slate-200">
+              Loading dashboard metrics...
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-10 px-4 md:px-0">
+            {stats.map((stat) => (
+              <StatsCard key={stat.title} {...stat} />
+            ))}
+          </div>
 
       <div className="mt-12 px-4 md:px-0 border-t border-gray-700/30"></div>
       <div className="mt-8 px-4 md:px-0">

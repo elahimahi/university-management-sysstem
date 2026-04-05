@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { DollarSign, Plus, Edit, Trash2, AlertCircle, CheckCircle, Search } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { DollarSign, Plus, Edit, Trash2, AlertCircle, CheckCircle, Search, TrendingUp, Clock } from 'lucide-react';
 import { API_BASE_URL } from '../../constants/app.constants';
 
 interface Fee {
   id: number;
   student_id: number;
+  description?: string;
   amount: number;
-  semester: string;
   due_date: string;
   status: string;
 }
@@ -21,10 +22,10 @@ const FeesManagementPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    student_id: '',
+    description: '',
     amount: '',
-    semester: 'Fall 2024',
     due_date: '',
+    status: 'pending',
   });
 
   useEffect(() => {
@@ -38,14 +39,14 @@ const FeesManagementPage: React.FC = () => {
   const fetchFees = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/admin/get_all_fees.php`);
+      const response = await fetch(`${API_BASE_URL}/admin/fees?limit=100`);
       const data = await response.json();
 
       if (response.ok) {
         setFees(data.fees || []);
         setError(null);
       } else {
-        setError(data.message || 'Failed to fetch fees');
+        setError(data.error || data.message || 'Failed to fetch fees');
       }
     } catch (err) {
       setError('Network error while fetching fees');
@@ -75,11 +76,10 @@ const FeesManagementPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const studentId = formData.student_id ? parseInt(formData.student_id as string) : null;
     const amount = formData.amount ? parseFloat(formData.amount as string) : null;
 
-    if (!studentId || !amount) {
-      setError('Student ID and amount are required');
+    if (!amount || !formData.description || !formData.due_date || !formData.status) {
+      setError('Description, amount, date, and status are required');
       return;
     }
 
@@ -88,13 +88,11 @@ const FeesManagementPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          student_ids: [studentId],
-          description: 'Fee',
+          student_ids: null,
+          description: formData.description,
           amount: amount,
           due_date: formData.due_date,
-          payment_deadline: formData.due_date,
-          penalty_percentage: 5,
-          apply_after_days: 7,
+          status: formData.status,
         }),
       });
 
@@ -104,10 +102,10 @@ const FeesManagementPage: React.FC = () => {
         setSuccess('✅ Fee created successfully!');
         setShowForm(false);
         setFormData({
-          student_id: '',
+          description: '',
           amount: '',
-          semester: 'Fall 2024',
           due_date: '',
+          status: 'pending',
         });
         fetchFees();
         setTimeout(() => setSuccess(null), 3000);
@@ -188,20 +186,174 @@ const FeesManagementPage: React.FC = () => {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-emerald-900/30 border border-emerald-500/30 text-emerald-100 rounded-lg p-6">
-            <p className="text-sm opacity-75">Total Amount</p>
-            <p className="text-3xl font-bold mt-2">${totalAmount.toFixed(2)}</p>
-          </div>
-          <div className="bg-green-900/30 border border-green-500/30 text-green-100 rounded-lg p-6">
-            <p className="text-sm opacity-75">Paid Amount</p>
-            <p className="text-3xl font-bold mt-2">${paidAmount.toFixed(2)}</p>
-          </div>
-          <div className="bg-orange-900/30 border border-orange-500/30 text-orange-100 rounded-lg p-6">
-            <p className="text-sm opacity-75">Pending Amount</p>
-            <p className="text-3xl font-bold mt-2">${(totalAmount - paidAmount).toFixed(2)}</p>
-          </div>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+        >
+          {/* Total Amount Card */}
+          <motion.div 
+            whileHover={{ scale: 1.05, y: -10 }}
+            className="relative overflow-hidden rounded-2xl p-8 bg-gradient-to-br from-slate-800/40 to-slate-900/60 backdrop-blur-lg border border-emerald-400/30 group cursor-default shadow-2xl"
+          >
+            {/* Animated background orbs */}
+            <motion.div 
+              animate={{ x: [0, 20, 0], y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-emerald-500/30 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            />
+            
+            <div className="relative z-10">
+              <div className="flex items-start justify-between mb-4">
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                  className="p-3 bg-emerald-500/20 rounded-xl backdrop-blur-sm border border-emerald-400/40"
+                >
+                  <DollarSign className="w-6 h-6 text-emerald-400" />
+                </motion.div>
+                <motion.div 
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="text-xs font-bold text-emerald-300/70 uppercase tracking-wider bg-emerald-500/20 px-2 py-1 rounded-full"
+                >
+                  Total
+                </motion.div>
+              </div>
+              
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300/60 mb-3">Total Amount</p>
+              
+              <motion.div 
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="flex items-baseline gap-2"
+              >
+                <p className="text-4xl lg:text-5xl font-black text-emerald-200 drop-shadow-lg">
+                  ${totalAmount.toFixed(2)}
+                </p>
+              </motion.div>
+              
+              <motion.div 
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.4, duration: 0.8 }}
+                className="mt-4 h-1 bg-emerald-500/20 rounded-full overflow-hidden origin-left"
+              >
+                <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 w-full" />
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Paid Amount Card */}
+          <motion.div 
+            whileHover={{ scale: 1.05, y: -10 }}
+            className="relative overflow-hidden rounded-2xl p-8 bg-gradient-to-br from-slate-800/40 to-slate-900/60 backdrop-blur-lg border border-blue-400/30 group cursor-default shadow-2xl"
+          >
+            {/* Animated background orbs */}
+            <motion.div 
+              animate={{ x: [0, -20, 0], y: [0, 10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              className="absolute -bottom-12 -left-12 w-32 h-32 bg-gradient-to-br from-blue-500/30 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            />
+            
+            <div className="relative z-10">
+              <div className="flex items-start justify-between mb-4">
+                <motion.div 
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                  className="p-3 bg-blue-500/20 rounded-xl backdrop-blur-sm border border-blue-400/40"
+                >
+                  <TrendingUp className="w-6 h-6 text-blue-400" />
+                </motion.div>
+                <motion.div 
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
+                  className="text-xs font-bold text-blue-300/70 uppercase tracking-wider bg-blue-500/20 px-2 py-1 rounded-full"
+                >
+                  Received
+                </motion.div>
+              </div>
+              
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300/60 mb-3">Paid Amount</p>
+              
+              <motion.div 
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="flex items-baseline gap-2"
+              >
+                <p className="text-4xl lg:text-5xl font-black text-blue-200 drop-shadow-lg">
+                  ${paidAmount.toFixed(2)}
+                </p>
+              </motion.div>
+              
+              <motion.div 
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.4, duration: 0.8 }}
+                className="mt-4 h-1 bg-blue-500/20 rounded-full overflow-hidden origin-left"
+              >
+                <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 w-full" />
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Pending Amount Card */}
+          <motion.div 
+            whileHover={{ scale: 1.05, y: -10 }}
+            className="relative overflow-hidden rounded-2xl p-8 bg-gradient-to-br from-slate-800/40 to-slate-900/60 backdrop-blur-lg border border-pink-400/30 group cursor-default shadow-2xl"
+          >
+            {/* Animated background orbs */}
+            <motion.div 
+              animate={{ x: [0, 15, 0], y: [0, -15, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-pink-500/30 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            />
+            
+            <div className="relative z-10">
+              <div className="flex items-start justify-between mb-4">
+                <motion.div 
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  className="p-3 bg-pink-500/20 rounded-xl backdrop-blur-sm border border-pink-400/40"
+                >
+                  <Clock className="w-6 h-6 text-pink-400" />
+                </motion.div>
+                <motion.div 
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
+                  className="text-xs font-bold text-pink-300/70 uppercase tracking-wider bg-pink-500/20 px-2 py-1 rounded-full"
+                >
+                  Pending
+                </motion.div>
+              </div>
+              
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-pink-300/60 mb-3">Pending Amount</p>
+              
+              <motion.div 
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="flex items-baseline gap-2"
+              >
+                <p className="text-4xl lg:text-5xl font-black text-pink-200 drop-shadow-lg">
+                  ${(totalAmount - paidAmount).toFixed(2)}
+                </p>
+              </motion.div>
+              
+              <motion.div 
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.4, duration: 0.8 }}
+                className="mt-4 h-1 bg-pink-500/20 rounded-full overflow-hidden origin-left"
+              >
+                <div className="h-full bg-gradient-to-r from-pink-400 to-pink-600 w-full" />
+              </motion.div>
+            </div>
+          </motion.div>
+        </motion.div>
 
         {/* Action Bar */}
         <div className="mb-8 flex gap-4">
@@ -218,12 +370,13 @@ const FeesManagementPage: React.FC = () => {
         {showForm && (
           <div className="bg-slate-800/50 border border-slate-600 rounded-lg p-6 mb-8">
             <form onSubmit={handleSubmit}>
+              <p className="text-sm text-slate-300 mb-4">Fill Up The Form  and Click Create Fee </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <input
-                  type="number"
-                  placeholder="Student ID"
-                  value={formData.student_id}
-                  onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
+                  type="text"
+                  placeholder="Description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="bg-slate-700/50 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-purple-500"
                   required
                 />
@@ -242,15 +395,17 @@ const FeesManagementPage: React.FC = () => {
                   value={formData.due_date}
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                   className="bg-slate-700/50 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-purple-500"
+                  required
                 />
+
                 <select
-                  value={formData.semester}
-                  onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="bg-slate-700/50 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-purple-500"
+                  required
                 >
-                  <option value="Fall 2024">Fall 2024</option>
-                  <option value="Spring 2025">Spring 2025</option>
-                  <option value="Summer 2025">Summer 2025</option>
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
                 </select>
               </div>
               <button
@@ -273,8 +428,9 @@ const FeesManagementPage: React.FC = () => {
                 <thead className="bg-slate-800/50 border-b border-slate-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Student ID</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Description</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Amount</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Semester</th>
+
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Due Date</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Status</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-200">Actions</th>
@@ -291,12 +447,12 @@ const FeesManagementPage: React.FC = () => {
                     filteredFees.map((fee) => (
                       <tr key={fee.id} className="hover:bg-slate-800/30 transition-colors">
                         <td className="px-6 py-4 text-gray-200">{fee.student_id}</td>
+                        <td className="px-6 py-4 text-gray-200">{fee.description || '—'}</td>
                         <td className="px-6 py-4 text-gray-200">${parseFloat(fee.amount.toString()).toFixed(2)}</td>
-                        <td className="px-6 py-4 text-gray-200">{fee.semester}</td>
                         <td className="px-6 py-4 text-gray-200">{new Date(fee.due_date).toLocaleDateString()}</td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(fee.status)}`}>
-                            {fee.status.charAt(0).toUpperCase() + fee.status.slice(1)}
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(fee.status || '')}`}>
+                            {fee.status ? fee.status.charAt(0).toUpperCase() + fee.status.slice(1) : 'N/A'}
                           </span>
                         </td>
                         <td className="px-6 py-4">
