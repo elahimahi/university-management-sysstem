@@ -31,7 +31,11 @@ import {
     ResponsiveContainer,
 } from 'recharts';
 
+<<<<<<< HEAD
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+=======
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
 
 const FacultyDashboard: React.FC = () => {
     const { user, logout } = useAuth();
@@ -227,19 +231,23 @@ const FacultyDashboard: React.FC = () => {
                                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-gold-400">
                                     <GraduationCap size={20} /> Enrollment Distribution
                                 </h3>
-                                <div className="h-[300px] w-full min-w-0 min-h-0">
-                                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} aspect={2}>
-                                        <BarChart data={chartData}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                                            <XAxis dataKey="name" stroke="#94a3b8" />
-                                            <YAxis stroke="#94a3b8" />
-                                            <Tooltip
-                                                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px' }}
-                                                itemStyle={{ color: '#FFB347' }}
-                                            />
-                                            <Bar dataKey="students" fill="#FFB347" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
+                                <div className="h-[300px] w-full min-w-0 min-h-0 flex items-center justify-center">
+                                    {chartData && chartData.length > 0 ? (
+                                        <ResponsiveContainer width={`100%`} height={300} minWidth={300} minHeight={300}>
+                                            <BarChart data={chartData}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                                                <XAxis dataKey="name" stroke="#94a3b8" />
+                                                <YAxis stroke="#94a3b8" />
+                                                <Tooltip
+                                                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px' }}
+                                                    itemStyle={{ color: '#FFB347' }}
+                                                />
+                                                <Bar dataKey="students" fill="#FFB347" radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="text-gray-400">No course data available</div>
+                                    )}
                                 </div>
                             </div>
 

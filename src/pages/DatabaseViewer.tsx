@@ -18,7 +18,11 @@ const DatabaseViewer: React.FC = () => {
     const fetchUsers = () => {
         setLoading(true);
         setError(null);
+<<<<<<< HEAD
         fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}/users/get`)
+=======
+        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/users/get`)
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
             .then((res) => {
                 if (!res.ok) throw new Error('Network response was not ok');
                 return res.json();
@@ -41,7 +45,11 @@ const DatabaseViewer: React.FC = () => {
 
     const addDemoUser = () => {
         setLoading(true);
+<<<<<<< HEAD
         fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}/users/add-demo`, { method: 'POST' })
+=======
+        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/users/add-demo`, { method: 'POST' })
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
             .then((res) => res.json())
             .then((result) => {
                 if (result.status === 'success') {

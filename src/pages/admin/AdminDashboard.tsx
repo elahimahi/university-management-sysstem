@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +18,18 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
+=======
+
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate, Link } from 'react-router-dom';
+import StatsCard from '../../components/ui/StatsCard';
+import Tabs from '../../components/ui/Tabs';
+import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import { API_BASE_URL } from '../../constants/app.constants';
+import { UserCog, Database, Settings, Users, BookOpen, BarChart2, ShieldCheck, FileText, RefreshCw, Bell, Key, Activity, LifeBuoy, Server, Lock, DollarSign, ArrowRight, CreditCard } from 'lucide-react';
+import UserManagement from './UserManagement';
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -30,6 +43,7 @@ interface DashboardStat {
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+<<<<<<< HEAD
   const [stats, setStats] = useState<DashboardStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [systemHealth, setSystemHealth] = useState(95);
@@ -44,6 +58,68 @@ const AdminDashboard: React.FC = () => {
     }, 5000);
     return () => clearInterval(healthInterval);
   }, []);
+=======
+  const [activeTab, setActiveTab] = React.useState('users');
+  const [statsData, setStatsData] = useState({
+    totalUsers: 0,
+    totalStudents: 0,
+    totalFaculty: 0,
+    pendingApprovals: 0,
+    totalCourses: 0,
+    totalFees: 0,
+    totalPayments: 0,
+  });
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setDashboardLoading(true);
+        setDashboardError(null);
+
+        const [usersRes, coursesRes, pendingRes, feesRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/admin/get_users_stats.php`),
+          fetch(`${API_BASE_URL}/admin/get_courses_stats.php`),
+          fetch(`${API_BASE_URL}/admin/get_pending_registrations.php`),
+          fetch(`${API_BASE_URL}/admin/get_fees_stats.php`),
+        ]);
+
+        const usersData = usersRes.ok ? (await usersRes.json()) as any : {};
+        const coursesData = coursesRes.ok ? (await coursesRes.json()) as any : {};
+        const pendingData = pendingRes.ok ? (await pendingRes.json()) as any : { users: [] };
+        const feesData = feesRes.ok ? (await feesRes.json()) as any : {};
+
+        setStatsData({
+          totalUsers: usersData?.total || usersData?.totalUsers || 0,
+          totalStudents: usersData?.students || usersData?.totalStudents || 0,
+          totalFaculty: usersData?.faculty || usersData?.totalFaculty || 0,
+          pendingApprovals: pendingData?.count || pendingData?.users?.length || 0,
+          totalCourses: coursesData?.total || coursesData?.totalCourses || 0,
+          totalFees: feesData?.totalFees || feesData?.total || 0,
+          totalPayments: feesData?.paidFees || feesData?.payments || 0,
+        });
+      } catch (error) {
+        console.error('Dashboard load failed', error);
+        setDashboardError('Unable to load dashboard metrics.');
+      } finally {
+        setDashboardLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const stats: import('../../components/ui/StatsCard').StatsCardProps[] = [
+    { title: 'Total Users', value: statsData.totalUsers, icon: <Users />, color: 'gold' },
+    { title: 'Students', value: statsData.totalStudents, icon: <UserCog />, color: 'success' },
+    { title: 'Faculty', value: statsData.totalFaculty, icon: <BookOpen />, color: 'navy' },
+    { title: 'Pending Approvals', value: statsData.pendingApprovals, icon: <Bell />, color: 'warning' },
+    { title: 'Total Courses', value: statsData.totalCourses, icon: <Database />, color: 'gold' },
+    { title: 'Total Fees', value: statsData.totalFees, icon: <DollarSign />, color: 'success' },
+    { title: 'Total Payments', value: statsData.totalPayments, icon: <CreditCard />, color: 'error' },
+  ];
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
 
   const fetchDashboardData = async () => {
     try {
@@ -165,6 +241,7 @@ const AdminDashboard: React.FC = () => {
       action: () => navigate('/admin/database'),
     },
     {
+<<<<<<< HEAD
       id: 'logs',
       title: 'System Logs',
       description: 'View system logs',
@@ -181,6 +258,8 @@ const AdminDashboard: React.FC = () => {
       action: () => navigate('/admin/backup'),
     },
     {
+=======
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
       id: 'access',
       title: 'Access Control',
       description: 'Manage permissions',
@@ -274,6 +353,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       </motion.div>
 
+<<<<<<< HEAD
       {/* Stats Section */}
       <motion.div
         variants={containerVariants}
@@ -300,6 +380,23 @@ const AdminDashboard: React.FC = () => {
                 }}
                 className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-300"
               />
+=======
+{dashboardError && (
+            <div className="mb-6 rounded-xl border border-orange-400/20 bg-orange-500/10 px-4 py-3 text-orange-100">
+              {dashboardError}
+            </div>
+          )}
+          {dashboardLoading && (
+            <div className="mb-6 rounded-xl border border-slate-600/30 bg-slate-900/80 px-4 py-6 text-center text-slate-200">
+              Loading dashboard metrics...
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-10 px-4 md:px-0">
+            {stats.map((stat) => (
+              <StatsCard key={stat.title} {...stat} />
+            ))}
+          </div>
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
 
               <div className="relative p-8 z-10">
                 <div className="flex justify-between items-start mb-6">

@@ -11,7 +11,11 @@ import {
 import { getAccessToken, getRefreshToken } from '../utils/auth.utils';
 
 // API base URL - Points to backend server
+<<<<<<< HEAD
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+=======
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/university-management-sysstem/backend';
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
 
 /**
  * Generate a mock JWT token for testing
@@ -71,7 +75,14 @@ export const loginUser = async (
 ): Promise<{ user: User; tokens: AuthTokens }> => {
   try {
     console.debug('[auth.service] loginUser credentials', credentials);
+<<<<<<< HEAD
     const response = await authApi.post('/auth/login', credentials);
+=======
+    const response = await authApi.post(
+      '/auth/login',
+      credentials
+    );
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
     // Convert snake_case to camelCase
     const user = response.data.user;
     const mappedUser: User = {
@@ -82,6 +93,8 @@ export const loginUser = async (
       role: user.role,
       profilePicture: user.profile_picture,
       isEmailVerified: user.is_email_verified,
+      approvalStatus: user.approval_status,
+      rejectionReason: user.rejection_reason,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
@@ -110,7 +123,14 @@ export const registerUser = async (
 ): Promise<{ user: User; tokens: AuthTokens }> => {
   try {
     console.debug('[auth.service] registerUser data', data);
+<<<<<<< HEAD
     const response = await authApi.post('/auth/register', data);
+=======
+    const response = await authApi.post(
+      '/auth/register',
+      data
+    );
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
     // Convert snake_case to camelCase
     const user = response.data.user;
     const mappedUser: User = {
@@ -121,6 +141,8 @@ export const registerUser = async (
       role: user.role,
       profilePicture: user.profile_picture,
       isEmailVerified: user.is_email_verified,
+      approvalStatus: user.approval_status,
+      rejectionReason: user.rejection_reason,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
@@ -235,8 +257,8 @@ export const logoutUser = async (): Promise<void> => {
  */
 export const getCurrentUser = async (): Promise<User> => {
   try {
-    // Use the correct PHP backend endpoint for current user profile
-    const response = await authApi.get('users/me.php');
+    // Use the correct backend endpoint for current user profile
+    const response = await authApi.get('/users/me');
     return response.data;
   } catch (error) {
     throw error;

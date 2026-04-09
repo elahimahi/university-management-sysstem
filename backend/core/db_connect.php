@@ -1,18 +1,25 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+// CORS headers are now set in index.php
+// This file only handles database connection
 
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    http_response_code(200);
-    exit();
+<<<<<<< HEAD
+    if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+        http_response_code(200);
+        exit();
+    }
 }
 
+<<<<<<< HEAD
 $host = 'MAHI\SQLEXPRESS';
+=======
+=======
+>>>>>>> dev
+$host = 'DESKTOP-83A2G7T\SQLEXPRESS';
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
 $db   = 'university_db';
 
-// For Windows Authentication
-$dsn = "sqlsrv:Server=$host;Database=$db;Encrypt=true;TrustServerCertificate=true";
+// For Windows Authentication - Disable encryption for local development
+$dsn = "sqlsrv:Server=$host;Database=$db;Encrypt=no;TrustServerCertificate=false";
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

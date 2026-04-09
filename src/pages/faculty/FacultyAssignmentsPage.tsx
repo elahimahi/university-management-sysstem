@@ -16,7 +16,11 @@ interface Course {
   name: string;
 }
 
+<<<<<<< HEAD
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+=======
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
 
 const FacultyAssignmentsPage: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);

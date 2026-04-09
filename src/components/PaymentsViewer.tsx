@@ -34,7 +34,11 @@ const PaymentsViewer: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [methodFilter, setMethodFilter] = useState('');
 
+<<<<<<< HEAD
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+=======
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+>>>>>>> d76415c9574e79438d37ef152f9c130eaa7dd8db
 
   useEffect(() => {
     fetchPayments();
@@ -271,9 +275,9 @@ const PaymentsViewer: React.FC = () => {
                     {payment.description}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getMethodColor(payment.payment_method)}`}>
-                      <span>{getMethodIcon(payment.payment_method)}</span>
-                      {payment.payment_method.charAt(0).toUpperCase() + payment.payment_method.slice(1)}
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getMethodColor(payment.payment_method || '')}`}>
+                      <span>{getMethodIcon(payment.payment_method || '')}</span>
+                      {payment.payment_method ? payment.payment_method.charAt(0).toUpperCase() + payment.payment_method.slice(1) : 'N/A'}
                     </span>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600 dark:text-green-400">
