@@ -31,7 +31,6 @@ if (!isset($data['code']) || !isset($data['name'])) {
 }
 
 try {
-<<<<<<< HEAD
     $courseCode = strtoupper(preg_replace('/\s+/', ' ', trim($data['code'])));
     $courseName = trim($data['name']);
     error_log("CREATE_COURSE: Attempting to create course with code=" . $courseCode . ", name=" . $courseName);
@@ -51,9 +50,6 @@ try {
         echo json_encode(['status' => 'error', 'message' => 'Course code already exists']);
         exit;
     }
-=======
-    error_log("CREATE_COURSE: Attempting to create course with code=" . $data['code'] . ", name=" . $data['name']);
->>>>>>> dev
     
     $stmt = $pdo->prepare("
         INSERT INTO courses (code, name, credits, category, level, instructor_id)

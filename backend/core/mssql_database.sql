@@ -87,7 +87,6 @@ CREATE TABLE payments (
     CONSTRAINT FK_Payments_Fees FOREIGN KEY (fee_id) REFERENCES fees(id) ON DELETE CASCADE
 );
 
-<<<<<<< HEAD
 -- 8. Admin Notifications Table
 CREATE TABLE admin_notifications (
     id INT IDENTITY(1,1) PRIMARY KEY,
@@ -103,9 +102,6 @@ CREATE TABLE admin_notifications (
 );
 
 -- 9. Assignments Table
-=======
--- 8. Assignments Table
->>>>>>> dev
 CREATE TABLE assignments (
     id INT IDENTITY(1,1) PRIMARY KEY,
     enrollment_id INT NOT NULL,

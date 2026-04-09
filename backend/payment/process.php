@@ -119,8 +119,6 @@ try {
         ]);
     }
 
-<<<<<<< HEAD
-=======
     // Send SMS notification
     $sms_service = new SMSService($pdo);
     
@@ -152,8 +150,6 @@ try {
         'total_paid' => $total_paid,
         'sms_notification' => $sms_result ?? ['success' => false, 'message' => 'No phone number available']
     ]);
-
->>>>>>> dev
 } catch (Exception $e) {
     error_log('Payment processing error: ' . $e->getMessage() . ' Stack: ' . $e->getTraceAsString());
     http_response_code(500);
