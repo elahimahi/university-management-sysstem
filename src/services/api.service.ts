@@ -1,7 +1,7 @@
 ﻿import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import toast from 'react-hot-toast';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/university-management-sysstem/backend';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 const API_TIMEOUT = parseInt(process.env.REACT_APP_API_TIMEOUT || '30000', 10);
 
 class ApiService {
@@ -93,9 +93,7 @@ class ApiService {
   }
 
   public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    // For DELETE requests with body data, ensure it's properly formatted for axios
-    const axiosConfig = config || {};
-    const response: AxiosResponse<T> = await this.axiosInstance.delete(url, axiosConfig);
+    const response: AxiosResponse<T> = await this.axiosInstance.delete(url, config);
     return response.data;
   }
 }

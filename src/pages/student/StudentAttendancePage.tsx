@@ -33,7 +33,7 @@ const StudentAttendancePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
   useEffect(() => {
     const fetchAttendanceData = async () => {
@@ -91,8 +91,8 @@ const StudentAttendancePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-cyan-400"></div>
+      <div className="min-h-screen bg-white dark:bg-navy-900 flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
   }
@@ -103,98 +103,145 @@ const StudentAttendancePage: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8"
+      className="min-h-screen bg-white dark:bg-navy-900 p-8"
     >
       <Toaster position="top-right" />
 
-      <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.55)] mb-10"
-        >
-          <div className="pointer-events-none absolute -top-10 -right-10 h-48 w-48 rounded-full bg-emerald-500/15 blur-3xl" />
-          <div className="pointer-events-none absolute left-10 top-16 h-32 w-32 rounded-full bg-cyan-500/15 blur-3xl" />
-          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-3 rounded-full bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300">
-                <Clock className="w-5 h-5" />
-                Attendance
-              </div>
-              <h1 className="mt-4 text-4xl font-bold text-white">Monitor your attendance with confidence</h1>
-              <p className="mt-3 max-w-2xl text-slate-300">
-                See your performance by course, track important deadlines, and stay ahead with clean analytics.
-              </p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-3xl bg-slate-950/80 border border-white/10 p-5 text-center">
-                <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Courses</p>
-                <p className="mt-3 text-3xl font-bold text-cyan-300">{stats.length}</p>
-              </div>
-              <div className="rounded-3xl bg-slate-950/80 border border-white/10 p-5 text-center">
-                <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Records</p>
-                <p className="mt-3 text-3xl font-bold text-emerald-300">{recent.length}</p>
-              </div>
-              <div className="rounded-3xl bg-slate-950/80 border border-white/10 p-5 text-center">
-                <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Status</p>
-                <p className="mt-3 text-3xl font-bold text-amber-300">Active</p>
-              </div>
-            </div>
+      <div className="flex items-center gap-3 mb-6">
+        <Clock className="w-8 h-8 text-green-500" />
+        <h1 className="text-3xl font-bold">Attendance</h1>
+      </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-semibold text-red-800 dark:text-red-300">Error</h3>
+            <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
           </div>
-        </motion.div>
+        </div>
+      )}
 
-        {error && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-3xl border border-red-500/20 bg-red-500/10 p-4 text-red-200">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-              <div>
-                <p className="font-semibold">Something went wrong</p>
-                <p className="text-sm text-red-200">{error}</p>
+      {/* Overall Attendance Summary */}
+      {stats.length > 0 && (
+        <div className="mb-8">
+          {(() => {
+            const totalClasses = stats.reduce((sum, stat) => sum + stat.total_classes, 0);
+            const totalPresent = stats.reduce((sum, stat) => sum + stat.present, 0);
+            const totalAbsent = stats.reduce((sum, stat) => sum + stat.absent, 0);
+            const totalLate = stats.reduce((sum, stat) => sum + stat.late, 0);
+            const overallPercentage = totalClasses > 0 
+              ? Math.round((totalPresent / totalClasses) * 100 * 100) / 100 
+              : 0;
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="rounded-xl shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-6 border border-blue-200 dark:border-blue-700 col-span-1 md:col-span-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Overall Attendance</h3>
+                      <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">{overallPercentage}%</div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{totalPresent} out of {totalClasses} classes</p>
+                    </div>
+                    <div className="text-right">
+                      {overallPercentage >= 75 ? (
+                        <div className="text-4xl">✅</div>
+                      ) : overallPercentage >= 60 ? (
+                        <div className="text-4xl">⚠️</div>
+                      ) : (
+                        <div className="text-4xl">❌</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all ${
+                        overallPercentage >= 75
+                          ? 'bg-green-500'
+                          : overallPercentage >= 60
+                          ? 'bg-yellow-500'
+                          : 'bg-red-500'
+                      }`}
+                      style={{ width: `${overallPercentage}%` }}
+                    />
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  className="rounded-xl shadow-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 p-6 border border-green-200 dark:border-green-700"
+                >
+                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Present</h3>
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{totalPresent}</div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  className="rounded-xl shadow-lg bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 p-6 border border-yellow-200 dark:border-yellow-700"
+                >
+                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Late</h3>
+                  <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">{totalLate}</div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="rounded-xl shadow-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 p-6 border border-red-200 dark:border-red-700"
+                >
+                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Absent</h3>
+                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{totalAbsent}</div>
+                </motion.div>
               </div>
-            </div>
-          </motion.div>
-        )}
+            );
+          })()}
+        </div>
+      )}
 
-        {stats.length > 0 && (
-          <div className="grid gap-6 xl:grid-cols-[2fr_1fr] mb-10">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.45)]"
-            >
-              <h3 className="text-lg font-semibold text-white mb-4">Key insights</h3>
-              <div className="space-y-4 text-slate-300 text-sm">
-                <p>Looks like your attendance is being tracked consistently across all courses.</p>
-                <p>Tap each course card below to review its attendance ratio and status.</p>
-                <p className="text-slate-400">Keep an eye on low-percentage classes to avoid any gaps.</p>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-        {stats.length > 0 && (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      {/* Course Attendance Stats */}
+      {stats.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4">Your Attendance by Course</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {stats.map((stat, index) => (
               <motion.div
                 key={stat.course_code}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.08 }}
-                className="rounded-[2rem] border border-white/10 bg-slate-950/90 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.45)]"
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="rounded-xl shadow-lg bg-gradient-to-br from-green-50 to-white dark:from-navy-800 dark:to-navy-900 p-6 border border-green-100 dark:border-navy-700"
               >
-                <div className="flex items-start justify-between gap-4 mb-5">
+                <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-white">{stat.course_code}</h3>
-                    <p className="text-sm text-slate-400">{stat.course_name}</p>
+                    <h3 className="font-bold text-lg">{stat.course_code}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{stat.course_name}</p>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                    stat.attendance_percentage >= 75 ? 'bg-emerald-500/15 text-emerald-300' : stat.attendance_percentage >= 60 ? 'bg-amber-500/15 text-amber-300' : 'bg-red-500/15 text-red-300'
-                  }`}>
-                    {stat.attendance_percentage}%
-                  </span>
+                  <div className="text-right">
+                    <div
+                      className={`text-3xl font-bold ${
+                        stat.attendance_percentage >= 75
+                          ? 'text-green-600'
+                          : stat.attendance_percentage >= 60
+                          ? 'text-yellow-600'
+                          : 'text-red-600'
+                      }`}
+                    >
+                      {stat.attendance_percentage}%
+                    </div>
+                  </div>
                 </div>
-                <div className="mb-5 h-36 rounded-3xl bg-slate-900/80 p-4">
+
+                {/* Pie Chart */}
+                <div className="h-32 mb-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -206,35 +253,48 @@ const StudentAttendancePage: React.FC = () => {
                         cx="50%"
                         cy="50%"
                         innerRadius={40}
-                        outerRadius={55}
-                        paddingAngle={3}
+                        outerRadius={60}
+                        paddingAngle={2}
                         dataKey="value"
                       >
                         <Cell fill="#10b981" />
-                        <Cell fill="#fbbf24" />
+                        <Cell fill="#f59e0b" />
                         <Cell fill="#ef4444" />
                       </Pie>
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="grid gap-3 text-sm text-slate-400">
-                  <div className="rounded-3xl bg-white/5 p-4">
-                    <p className="font-semibold text-white">Present</p>
-                    <p className="mt-2 text-xl font-bold text-emerald-300">{stat.present}</p>
+
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Present</div>
+                    <div className="text-lg font-bold text-green-600">{stat.present}</div>
                   </div>
-                  <div className="rounded-3xl bg-white/5 p-4">
-                    <p className="font-semibold text-white">Late</p>
-                    <p className="mt-2 text-xl font-bold text-amber-300">{stat.late}</p>
+                  <div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Late</div>
+                    <div className="text-lg font-bold text-yellow-600">{stat.late}</div>
                   </div>
-                  <div className="rounded-3xl bg-white/5 p-4">
-                    <p className="font-semibold text-white">Absent</p>
-                    <p className="mt-2 text-xl font-bold text-red-300">{stat.absent}</p>
+                  <div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Absent</div>
+                    <div className="text-lg font-bold text-red-600">{stat.absent}</div>
                   </div>
                 </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-navy-600 text-sm text-gray-600 dark:text-gray-400">
+                  Out of {stat.total_classes} classes
+                </div>
+                {stat.total_attendance_marks !== undefined && (
+                  <div className="mt-3 p-3 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg border border-blue-200 dark:border-blue-700">
+                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Attendance Marks</div>
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stat.total_attendance_marks}</div>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
-        )}
+        </div>
+      )}
 
       {/* Recent Attendance Records */}
       {recent.length > 0 && (
@@ -274,7 +334,7 @@ const StudentAttendancePage: React.FC = () => {
                           record.status
                         )}`}
                       >
-                        {record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : 'N/A'}
+                        {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
@@ -301,7 +361,6 @@ const StudentAttendancePage: React.FC = () => {
           <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Your attendance will be displayed here once faculty marks it</p>
         </div>
       )}
-      </div>
     </motion.div>
   );
 };

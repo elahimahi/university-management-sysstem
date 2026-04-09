@@ -25,7 +25,7 @@ interface DatabaseStats {
   submissions: number;
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 const FacultyReportsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -53,24 +53,23 @@ const FacultyReportsPage: React.FC = () => {
     try {
       setLoading(true);
 
-      const reportResponse = await fetch(`${API_BASE_URL}/debug/submission-flow-complete.php`);
+      // Fetch real data from backend API
+      const reportResponse = await fetch(`${API_BASE_URL}/faculty/reports.php`);
       const data = await reportResponse.json();
 
-      if (data.submissions_detail) {
-        setSubmissions(data.submissions_detail);
+      if (data.status === 'success') {
+        setSubmissions(data.submissions_detail || []);
 
         setStats({
           total_assignments: data.record_counts.course_assignments || 0,
-          total_submissions: data.submissions_detail?.length || 0,
+          total_submissions: data.submissions_detail?.length || data.record_counts.assignment_submissions || 0,
           pending_grading: data.grading_summary?.pending_grading || 0,
           graded: data.grading_summary?.graded || 0,
           overall_submission_rate: data.assignments_summary?.submission_rate 
             ? parseFloat(data.assignments_summary.submission_rate) 
             : 0
         });
-      }
 
-      if (data.record_counts) {
         setDbStats({
           users: data.record_counts.users || 0,
           courses: data.record_counts.courses || 0,
@@ -78,6 +77,8 @@ const FacultyReportsPage: React.FC = () => {
           assignments: data.record_counts.course_assignments || 0,
           submissions: data.record_counts.assignment_submissions || 0
         });
+      } else {
+        toast.error('Failed to load report data');
       }
     } catch (error: any) {
       console.error('Error loading reports:', error);
@@ -103,57 +104,15 @@ const FacultyReportsPage: React.FC = () => {
       transition={{ duration: 0.3 }}
       className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-navy-900 dark:to-navy-800 p-8"
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="max-width mx-auto">
         {/* Header */}
-        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-8 mb-10 shadow-[0_35px_120px_rgba(79,70,229,0.2)]">
-          <div className="absolute -right-24 -top-16 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl" />
-          <div className="absolute -left-24 -bottom-10 h-64 w-64 rounded-full bg-violet-400/10 blur-3xl" />
-          <div className="relative">
-            <h1 className="text-4xl font-bold text-white mb-3">📊 Faculty Reports</h1>
-            <p className="text-slate-200">Submission and grading analytics from SQL Server, presented in a modern, animated dashboard.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-[2rem] bg-white border border-slate-200 p-6 shadow-xl"
-          >
-            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Assignments</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">{stats.total_assignments}</p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-[2rem] bg-white border border-slate-200 p-6 shadow-xl"
-          >
-            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Submissions</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">{stats.total_submissions}</p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="rounded-[2rem] bg-white border border-slate-200 p-6 shadow-xl"
-          >
-            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Pending Grading</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">{stats.pending_grading}</p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="rounded-[2rem] bg-white border border-slate-200 p-6 shadow-xl"
-          >
-            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Submission Rate</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">{stats.overall_submission_rate.toFixed(0)}%</p>
-          </motion.div>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">📊 Faculty Reports</h1>
+          <p className="text-gray-600 dark:text-gray-300">Submission and grading analytics from SQL Server</p>
         </div>
 
         {/* Submissions Table */}
-        <Card className="shadow-2xl border border-slate-200 dark:border-navy-700">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle size={20} />
@@ -217,7 +176,7 @@ const FacultyReportsPage: React.FC = () => {
         </Card>
 
         {/* SQL Server Database Stats */}
-        <Card className="mt-8 shadow-2xl border border-slate-200 dark:border-navy-700">
+        <Card className="mt-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart size={20} />
@@ -280,7 +239,7 @@ const FacultyReportsPage: React.FC = () => {
 
         {/* Refresh Button */}
         <div className="mt-8 flex justify-center gap-4">
-          <Button onClick={loadReportData} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+          <Button onClick={loadReportData} className="flex items-center gap-2">
             🔄 Refresh Reports & SQL Data
           </Button>
         </div>
