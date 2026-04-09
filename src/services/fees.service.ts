@@ -48,7 +48,7 @@ export interface PaymentRequest {
   fee_id: number;
   student_id: number;
   amount_paid: number;
-  payment_method: 'bkash' | 'nagad' | 'card';
+  payment_method: 'bkash' | 'nagad' | 'rocket' | 'card';
   transaction_id?: string;
   phone_number?: string;
 }

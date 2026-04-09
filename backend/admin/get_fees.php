@@ -9,7 +9,8 @@ header('Content-Type: application/json');
 
 $student_id = $_GET['student_id'] ?? null;
 $status = $_GET['status'] ?? null; // pending, paid, overdue
-$limit = $_GET['limit'] ?? 100;
+$limit = (int) ($_GET['limit'] ?? 100);
+$limit = $limit > 0 ? $limit : 100;
 
 try {
     $query = '
@@ -25,6 +26,7 @@ try {
             f.status,
             COUNT(p.id) as payment_count,
             SUM(p.amount_paid) as total_paid,
+            STRING_AGG(p.payment_method, \', \') as payment_methods,
             CASE 
                 WHEN CAST(f.due_date AS DATE) < CAST(GETDATE() AS DATE) AND f.status = \'pending\' THEN \'overdue\'
                 ELSE f.status
@@ -55,7 +57,7 @@ try {
     
     $query .= ' GROUP BY f.id, f.student_id, u.first_name, u.last_name, u.email, f.description, f.amount, f.due_date, f.status
     ORDER BY f.due_date DESC
-    OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY';
+    OFFSET 0 ROWS FETCH NEXT ' . $limit . ' ROWS ONLY';
     
     $stmt = $pdo->prepare($query);
     
@@ -67,7 +69,6 @@ try {
     if ($status && !in_array($status, ['overdue', 'pending', 'due'])) {
         $stmt->bindParam($paramIndex++, $status, PDO::PARAM_STR);
     }
-    $stmt->bindParam($paramIndex, $limit, PDO::PARAM_INT);
     
     $stmt->execute();
 
@@ -75,22 +76,26 @@ try {
 
     // Map to include explicit current_status for frontend clarity
     foreach ($fees as &$fee) {
-        $due = new DateTime($fee['due_date']);
         $today = new DateTime();
         $feeStatus = $fee['status'];
 
-        if ($feeStatus === 'paid') {
-            $fee['current_status'] = 'paid';
-        } elseif ($feeStatus === 'pending') {
-            if ($due < $today) {
-                $fee['current_status'] = 'overdue';
-            } elseif ($due->format('Y-m-d') === $today->format('Y-m-d')) {
-                $fee['current_status'] = 'due';
-            } else {
-                $fee['current_status'] = 'pending';
-            }
+        if (!$fee['due_date']) {
+            $fee['current_status'] = $feeStatus === 'paid' ? 'paid' : 'pending';
         } else {
-            $fee['current_status'] = $feeStatus;
+            $due = new DateTime($fee['due_date']);
+            if ($feeStatus === 'paid') {
+                $fee['current_status'] = 'paid';
+            } elseif ($feeStatus === 'pending') {
+                if ($due < $today) {
+                    $fee['current_status'] = 'overdue';
+                } elseif ($due->format('Y-m-d') === $today->format('Y-m-d')) {
+                    $fee['current_status'] = 'due';
+                } else {
+                    $fee['current_status'] = 'pending';
+                }
+            } else {
+                $fee['current_status'] = $feeStatus;
+            }
         }
     }
 

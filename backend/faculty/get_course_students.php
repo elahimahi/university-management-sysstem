@@ -1,90 +1,66 @@
 <?php
-/**
- * Get all students enrolled in a faculty's course with their current attendance
- * GET /faculty/course-students?course_id=1&date=2024-03-17
- */
+// ============================================
+// ABSOLUTE FIRST LINE - CORS HEADERS
+// ============================================
+http_response_code(200);
+header('Access-Control-Allow-Origin: *', true);
+header('Access-Control-Allow-Credentials: true', true);
+header('Access-Control-Max-Age: 86400', true);
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD', true);
+header('Access-Control-Allow-Headers: Content-Type, Accept, X-Requested-With, Authorization, Origin', true);
+header('Content-Type: application/json; charset=utf-8', true);
 
-require_once __DIR__ . '/../core/db_connect.php';
-header('Content-Type: application/json');
-
-$course_id = $_GET['course_id'] ?? null;
-$faculty_id = $_GET['faculty_id'] ?? null;
-$date = $_GET['date'] ?? date('Y-m-d');
-$semester = $_GET['semester'] ?? null;
-
-if (!$course_id || !$faculty_id) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Missing required parameters: course_id, faculty_id']);
-    exit;
+// Handle OPTIONS for preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit(0);
 }
 
+// ============================================
+// NOW execute logic
+// ============================================
+require_once __DIR__ . '/../core/db_connect.php';
+
 try {
-    // Verify faculty is the instructor of this course
-    $verify_stmt = $pdo->prepare('SELECT id, name FROM courses WHERE id = ? AND instructor_id = ?');
-    $verify_stmt->execute([$course_id, $faculty_id]);
-    $course = $verify_stmt->fetch();
-    
-    if (!$course) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Unauthorized: You are not the instructor for this course']);
+    $course_id = $_GET['course_id'] ?? null;
+
+    if (!$course_id) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Course ID is required']);
         exit;
     }
 
-    // Get all students enrolled in this course
-    $query = '
+    // Get students enrolled in this specific course
+    $query = "
         SELECT 
             e.id as enrollment_id,
             u.id as student_id,
             u.first_name,
             u.last_name,
+            (u.first_name + ' ' + u.last_name) as name,
             u.email,
-            e.semester,
-            a.status as attendance_status,
-            a.date as attendance_date
+            e.enrolled_at,
+            e.status
         FROM enrollments e
         JOIN users u ON e.student_id = u.id
-        LEFT JOIN attendance a ON e.id = a.enrollment_id AND CAST(a.date AS DATE) = CAST(? AS DATE)
-        WHERE e.course_id = ? AND e.status = ?
-    ';
-    
-    $params = [$date, $course_id, 'active'];
-    
-    if ($semester) {
-        $query .= ' AND e.semester = ?';
-        $params[] = $semester;
-    }
-    
-    $query .= ' ORDER BY u.last_name, u.first_name';
-    
+        WHERE e.course_id = :course_id AND u.role = 'student' AND e.status = 'active'
+        ORDER BY u.last_name, u.first_name ASC
+    ";
+
     $stmt = $pdo->prepare($query);
-    $stmt->execute($params);
-    $students = $stmt->fetchAll();
+    $stmt->execute(['course_id' => $course_id]);
+    $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get course statistics
-    $stats_stmt = $pdo->prepare('
-        SELECT 
-            COUNT(DISTINCT e.id) as total_students,
-            SUM(CASE WHEN a.status = \'present\' THEN 1 ELSE 0 END) as present_count,
-            SUM(CASE WHEN a.status = \'absent\' THEN 1 ELSE 0 END) as absent_count,
-            SUM(CASE WHEN a.status = \'late\' THEN 1 ELSE 0 END) as late_count
-        FROM enrollments e
-        LEFT JOIN attendance a ON e.id = a.enrollment_id AND CAST(a.date AS DATE) = CAST(? AS DATE)
-        WHERE e.course_id = ? AND e.status = ?
-    ');
-    $stats_stmt->execute([$date, $course_id, 'active']);
-    $stats = $stats_stmt->fetch();
-
-    http_response_code(200);
     echo json_encode([
         'success' => true,
-        'course' => $course,
-        'date' => $date,
         'students' => $students,
-        'statistics' => $stats
+        'total' => count($students)
     ]);
 
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Server error', 'details' => $e->getMessage()]);
+    echo json_encode([
+        'error' => 'Database error: ' . $e->getMessage()
+    ]);
 }
 ?>

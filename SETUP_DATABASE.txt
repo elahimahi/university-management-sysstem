@@ -1,0 +1,46 @@
+<?php
+/**
+ * Simple Database Setup Guide
+ * 
+ * The "courses" table doesn't exist. This happens when the database schema 
+ * hasn't been initialized. Here's how to fix it:
+ * 
+ * OPTION 1: Using SQL Server Management Studio (SSMS) [RECOMMENDED]
+ * ============================================================
+ * 1. Open SQL Server Management Studio
+ * 2. Connect to: MAHI\SQLEXPRESS
+ * 3. Right-click on "university_db" → New Query
+ * 4. Copy-paste the entire contents of: backend/core/mssql_database.sql
+ * 5. Click Execute (F5)
+ * 6. All tables will be created
+ * 
+ * OPTION 2: Using Command Line
+ * =============================
+ * Open PowerShell or Command Prompt and run:
+ * 
+ *   sqlcmd -S MAHI\SQLEXPRESS -d university_db -i "C:\path\to\backend\core\mssql_database.sql"
+ * 
+ * (Replace "C:\path\to" with your actual project path)
+ * 
+ * OPTION 3: Using PHP Script
+ * ===========================
+ * Run this PHP script (requires the database_init.php file):
+ * 
+ *   cd /path/to/project
+ *   php backend/core/init_database.php
+ * 
+ * AFTER SETUP
+ * ===========
+ * 1. Faculty member registers and logs in
+ * 2. Faculty goes to: Faculty Dashboard → My Courses → Create Course
+ * 3. Fill in course details (Code, Name, Credits, etc.)
+ * 4. Course appears on Student pages
+ * 5. Students can now enroll in the course
+ * 6. Faculty can mark attendance and submit grades
+ */
+
+echo "Database Setup Guide\n";
+echo "====================\n\n";
+echo "Follow one of the three options above.\n";
+echo "Most reliable: OPTION 1 (SQL Server Management Studio)\n";
+?>

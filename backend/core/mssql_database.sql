@@ -11,9 +11,13 @@ CREATE TABLE users (
     role VARCHAR(20) DEFAULT 'student' CHECK (role IN ('student', 'faculty', 'admin')),
     phone VARCHAR(20) DEFAULT NULL,
     profile_picture VARCHAR(255) DEFAULT NULL,
+    approval_status VARCHAR(20) DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'rejected')),
+    approved_by INT DEFAULT NULL,
+    rejection_reason VARCHAR(255) DEFAULT NULL,
     is_email_verified BIT DEFAULT 0,
     created_at DATETIME2 DEFAULT GETDATE(),
-    updated_at DATETIME2 DEFAULT GETDATE()
+    updated_at DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT FK_Users_ApprovedBy FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- 2. Courses Table
@@ -73,7 +77,35 @@ CREATE TABLE fees (
     CONSTRAINT FK_Fees_Users FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- 7. Payments Table
+CREATE TABLE payments (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    fee_id INT NOT NULL,
+    amount_paid DECIMAL(10, 2) NOT NULL,
+    payment_date DATETIME2 DEFAULT GETDATE(),
+    payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('bkash', 'nagad', 'rocket', 'card')),
+    CONSTRAINT FK_Payments_Fees FOREIGN KEY (fee_id) REFERENCES fees(id) ON DELETE CASCADE
+);
+
+<<<<<<< HEAD
+-- 8. Admin Notifications Table
+CREATE TABLE admin_notifications (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    student_id INT NOT NULL,
+    fee_id INT,
+    amount DECIMAL(10, 2) NOT NULL,
+    payment_method VARCHAR(50),
+    fee_description VARCHAR(255),
+    status VARCHAR(20) DEFAULT 'unread' CHECK (status IN ('read', 'unread')),
+    created_at DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT FK_AdminNotifications_Students FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT FK_AdminNotifications_Fees FOREIGN KEY (fee_id) REFERENCES fees(id) ON DELETE CASCADE
+);
+
+-- 9. Assignments Table
+=======
 -- 8. Assignments Table
+>>>>>>> dev
 CREATE TABLE assignments (
     id INT IDENTITY(1,1) PRIMARY KEY,
     enrollment_id INT NOT NULL,

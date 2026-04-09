@@ -48,13 +48,14 @@ const RegisterPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
 
   // Redirection if already authenticated
   React.useEffect(() => {
     if (isAuthenticated && user) {
-      let targetPath = '/student/dashboard';
+      let targetPath = '/admin/dashboard';
       if (user.role === 'faculty') targetPath = '/faculty/dashboard';
-      else if (user.role === 'admin') targetPath = '/admin/dashboard';
+      else if (user.role === 'student') targetPath = '/student/dashboard';
       navigate(targetPath, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
@@ -109,6 +110,7 @@ const RegisterPage: React.FC = () => {
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
+      setRegistrationError(null);
       const registerData: RegisterData = { 
         ...data, 
         role: data.role as UserRole, 
@@ -116,16 +118,33 @@ const RegisterPage: React.FC = () => {
       };
       const response = await registerUser(registerData);
 
-      // Small delay to ensure state propagation
-      setTimeout(() => {
-        const userRole = response.user.role?.toLowerCase();
-        let targetPath = '/student/dashboard';
-        if (userRole === 'faculty') targetPath = '/faculty/dashboard';
-        else if (userRole === 'admin') targetPath = '/admin/dashboard';
-        navigate(targetPath, { replace: true });
-      }, 100);
-    } catch (error) {
+      // Check if user registration is pending approval
+      if (!response.user.id) {
+        setRegistrationError('Registration failed. Please try again.');
+        return;
+      }
+
+      // If user has tokens (admin), redirect to dashboard
+      if (response.tokens && response.tokens.accessToken) {
+        setTimeout(() => {
+          const userRole = response.user.role?.toLowerCase();
+          let targetPath = '/admin/dashboard';
+          navigate(targetPath, { replace: true });
+        }, 100);
+      } else {
+        // Show pending approval message
+        setRegistrationError(
+          `Registration successful! Your account is pending superadmin approval. You will receive a notification once approved.`
+        );
+        // Redirect to login page after 3 seconds
+        setTimeout(() => {
+          navigate('/login', { replace: true });
+        }, 3000);
+      }
+    } catch (error: any) {
       console.error('Registration failed:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Registration failed. Please try again.';
+      setRegistrationError(errorMessage);
     }
   };
 
@@ -274,6 +293,31 @@ const RegisterPage: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
               >
+            
+            {/* Error/Success Display */}
+            {registrationError && (
+              <div className={`mt-6 p-4 border rounded-xl ${
+                registrationError.includes('pending') ? 
+                  'bg-green-500/10 border-green-500/30' : 
+                  'bg-red-500/10 border-red-500/30'
+              }`}>
+                <p className={`text-sm font-bold ${
+                  registrationError.includes('pending') ? 
+                    'text-green-400' : 
+                    'text-red-400'
+                }`}>
+                  {registrationError.includes('pending') ? '✅ Success' : '❌ Error'}
+                </p>
+                <p className={`text-xs mt-1 ${
+                  registrationError.includes('pending') ? 
+                    'text-green-300' : 
+                    'text-red-300'
+                }`}>{registrationError}</p>
+                {registrationError.includes('Admin') && (
+                  <p className="text-red-300 text-xs mt-2">💡 Tip: Only one admin account can be registered. Contact your administrator if you need admin access.</p>
+                )}
+              </div>
+            )}
                 {renderStepContent()}
               </motion.div>
             </AnimatePresence>
