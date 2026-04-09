@@ -5,7 +5,7 @@
  * This is the main entry point for the backend API.
  * It routes incoming requests to the appropriate handler based on the URL path.
  * 
- * Base URL: http://localhost/Database_Project/Database-main/Database-main/backend
+ * Base URL: http://localhost:5000
  * All endpoints return JSON responses.
  */
 
@@ -26,11 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
-// Strip the base path for Apache
+// Strip the base path for both old Apache setup and new PHP dev server
 $basePath = '/Database_Project/Database-main/Database-main/backend';
 if (strpos($requestUri, $basePath) === 0) {
+    // Old Apache path format
     $requestUri = substr($requestUri, strlen($basePath));
-}
+} 
+// For PHP dev server, URI is already relative (like /auth/login)
+// No need to strip anything
 
 // Remove leading/trailing slashes and get the route
 $route = strtolower(trim($requestUri, '/'));

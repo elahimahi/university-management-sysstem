@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-$host = 'DESKTOP-83A2G7T\SQLEXPRESS';
+$host = 'MAHI\SQLEXPRESS';
 $db   = 'university_db';
 
 // For Windows Authentication

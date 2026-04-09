@@ -31,7 +31,7 @@ import {
     ResponsiveContainer,
 } from 'recharts';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/Database-main/Database-main/backend';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 const FacultyDashboard: React.FC = () => {
     const { user, logout } = useAuth();

@@ -25,7 +25,7 @@ interface DatabaseStats {
   submissions: number;
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/Database-main/Database-main/backend';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 const FacultyReportsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -53,24 +53,23 @@ const FacultyReportsPage: React.FC = () => {
     try {
       setLoading(true);
 
-      const reportResponse = await fetch(`${API_BASE_URL}/debug/submission-flow-complete.php`);
+      // Fetch real data from backend API
+      const reportResponse = await fetch(`${API_BASE_URL}/faculty/reports.php`);
       const data = await reportResponse.json();
 
-      if (data.submissions_detail) {
-        setSubmissions(data.submissions_detail);
+      if (data.status === 'success') {
+        setSubmissions(data.submissions_detail || []);
 
         setStats({
           total_assignments: data.record_counts.course_assignments || 0,
-          total_submissions: data.submissions_detail?.length || 0,
+          total_submissions: data.submissions_detail?.length || data.record_counts.assignment_submissions || 0,
           pending_grading: data.grading_summary?.pending_grading || 0,
           graded: data.grading_summary?.graded || 0,
           overall_submission_rate: data.assignments_summary?.submission_rate 
             ? parseFloat(data.assignments_summary.submission_rate) 
             : 0
         });
-      }
 
-      if (data.record_counts) {
         setDbStats({
           users: data.record_counts.users || 0,
           courses: data.record_counts.courses || 0,
@@ -78,6 +77,8 @@ const FacultyReportsPage: React.FC = () => {
           assignments: data.record_counts.course_assignments || 0,
           submissions: data.record_counts.assignment_submissions || 0
         });
+      } else {
+        toast.error('Failed to load report data');
       }
     } catch (error: any) {
       console.error('Error loading reports:', error);

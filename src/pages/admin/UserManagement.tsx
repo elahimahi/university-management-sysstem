@@ -8,7 +8,7 @@ const UserManagement: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch('http://localhost/Database_Project/Database-main/Database-main/backend/users/get_all_users.php')
+    fetch('http://localhost:5000/users/get_all_users.php')
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {

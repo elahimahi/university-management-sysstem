@@ -53,7 +53,7 @@ const AdminFeesPage: React.FC = () => {
     { label: 'Analytics', icon: <BarChart2 size={20} />, href: '/admin/dashboard' },
   ];
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/Database-main/Database-main/backend';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
   useEffect(() => {
     fetchAllFees();
