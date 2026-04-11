@@ -1,5 +1,5 @@
-# PHP 8.1 with Apache and SQL Server support
-FROM php:8.1-apache
+# PHP 8.3 with Apache and SQL Server support
+FROM php:8.3-apache
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
