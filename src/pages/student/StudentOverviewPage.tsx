@@ -156,7 +156,6 @@ const StudentOverviewPage: React.FC = () => {
                   icon={<Clock size={24} />}
                   color="success"
                   trend={{ value: 5, isPositive: true }}
-                  description="Average attendance"
                 />
               </motion.div>
 
@@ -168,7 +167,6 @@ const StudentOverviewPage: React.FC = () => {
                   icon={<CheckSquare size={24} />}
                   color="purple"
                   trend={{ value: 8, isPositive: true }}
-                  description="Grades received"
                 />
               </motion.div>
 
@@ -181,7 +179,6 @@ const StudentOverviewPage: React.FC = () => {
                   icon={<CreditCard size={24} />}
                   color="warning"
                   trend={{ value: 3, isPositive: false }}
-                  description="Amount due"
                 />
               </motion.div>
             </motion.div>
