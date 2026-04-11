@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Clock, Save, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_BASE_URL } from '../../constants/app.constants';
@@ -13,12 +14,27 @@ interface AttendanceRecord {
   status: 'present' | 'absent' | 'late' | '';
 }
 
+interface AttendanceSummary {
+  total: number;
+  present: number;
+  late: number;
+  absent: number;
+  rate: number;
+}
+
 const FacultyAttendanceMarkingPage: React.FC = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary>({
+    total: 0,
+    present: 0,
+    late: 0,
+    absent: 0,
+    rate: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +102,26 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
     }
   };
 
+  const calculateAttendanceSummary = (records: AttendanceRecord[]) => {
+    const present = records.filter(record => record.status === 'present').length;
+    const late = records.filter(record => record.status === 'late').length;
+    const absent = records.filter(record => record.status === 'absent').length;
+    const total = present + late + absent;
+    const rate = total > 0 ? Math.round(((present + late * 0.5) / total) * 1000) / 10 : 0;
+
+    setAttendanceSummary({
+      total,
+      present,
+      late,
+      absent,
+      rate,
+    });
+  };
+
+  useEffect(() => {
+    calculateAttendanceSummary(attendance);
+  }, [attendance]);
+
   const handleStatusChange = (enrollmentId: number, status: string) => {
     setAttendance(
       attendance.map(record =>
@@ -118,6 +154,15 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
 
       if (response.ok) {
         setSuccess('✅ Attendance saved successfully!');
+        if (data.attendanceSummary) {
+          setAttendanceSummary({
+            total: data.attendanceSummary.total || 0,
+            present: data.attendanceSummary.presentCount || 0,
+            late: data.attendanceSummary.lateCount || 0,
+            absent: data.attendanceSummary.absentCount || 0,
+            rate: data.attendanceSummary.attendanceRate || 0,
+          });
+        }
         setTimeout(() => setSuccess(null), 3000);
       } else {
         setError(data.error || 'Failed to save attendance');
@@ -139,12 +184,24 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-cyan-900 to-slate-900 p-8">
-      <div className="max-w-6xl mx-auto">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 p-8"
+    >
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">📋 Mark Attendance</h1>
-          <p className="text-cyan-200">Record student attendance for your courses</p>
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-950 to-cyan-900 p-8 mb-8 shadow-[0_35px_120px_rgba(14,165,233,0.15)]">
+          <div className="absolute -right-20 -top-14 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl" />
+          <div className="absolute -left-24 -bottom-10 h-64 w-64 rounded-full bg-slate-200/5 blur-3xl" />
+          <div className="relative max-w-4xl">
+            <h1 className="text-4xl font-extrabold text-white mb-3">📋 Mark Attendance</h1>
+            <p className="text-cyan-200 text-lg">
+              Record attendance with smooth controls, quick actions, and a polished faculty workflow.
+            </p>
+          </div>
         </div>
 
         {/* Messages */}
@@ -163,7 +220,7 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
         )}
 
         {/* Selection Bar */}
-        <div className="bg-slate-800/50 border border-slate-600 rounded-lg p-6 mb-8">
+        <div className="bg-slate-900/90 border border-slate-700/70 rounded-[2.5rem] p-6 mb-8 shadow-[0_35px_120px_rgba(8,10,27,0.35)] backdrop-blur-xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Course Selection */}
             <div>
@@ -173,7 +230,7 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
               <select
                 value={selectedCourse || ''}
                 onChange={(e) => handleCourseSelect(parseInt(e.target.value))}
-                className="w-full bg-slate-700/50 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-2xl focus:outline-none focus:border-cyan-400"
               >
                 <option value="">-- Choose a course --</option>
                 {courses.map(course => (
@@ -193,7 +250,7 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full bg-slate-700/50 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-2xl focus:outline-none focus:border-cyan-400"
               />
             </div>
 
@@ -202,16 +259,16 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
               <label className="block text-gray-300 text-sm font-semibold mb-2">
                 Quick Actions
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-3">
                 <button
                   onClick={markAllPresent}
-                  className="flex-1 bg-green-600/20 border border-green-500/50 text-green-300 hover:bg-green-600/30 px-3 py-2 rounded text-sm font-semibold transition-all"
+                  className="w-full bg-cyan-500 text-slate-950 hover:bg-cyan-400 px-4 py-3 rounded-2xl font-semibold transition-all shadow-xl shadow-cyan-500/20"
                 >
                   All Present
                 </button>
                 <button
                   onClick={clearAll}
-                  className="flex-1 bg-gray-600/20 border border-gray-500/50 text-gray-300 hover:bg-gray-600/30 px-3 py-2 rounded text-sm font-semibold transition-all"
+                  className="w-full bg-slate-700/80 border border-slate-600 text-white px-4 py-3 rounded-2xl font-semibold hover:bg-slate-700 transition-all"
                 >
                   Clear
                 </button>
@@ -220,9 +277,28 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Attendance Summary */}
+        {selectedCourse && attendance.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-slate-900/90 border border-slate-700 rounded-3xl p-6">
+              <p className="text-sm uppercase text-slate-400 tracking-wider">Attendance Rate</p>
+              <p className="text-4xl font-bold text-cyan-400 mt-3">{attendanceSummary.rate}%</p>
+              <p className="text-xs text-slate-500 mt-2">Based on marked attendance</p>
+            </div>
+            <div className="bg-slate-900/90 border border-slate-700 rounded-3xl p-6">
+              <p className="text-sm uppercase text-slate-400 tracking-wider">Present</p>
+              <p className="text-4xl font-bold text-emerald-400 mt-3">{attendanceSummary.present}</p>
+            </div>
+            <div className="bg-slate-900/90 border border-slate-700 rounded-3xl p-6">
+              <p className="text-sm uppercase text-slate-400 tracking-wider">Late / Absent</p>
+              <p className="text-4xl font-bold text-yellow-400 mt-3">{attendanceSummary.late} / {attendanceSummary.absent}</p>
+            </div>
+          </div>
+        )}
+
         {/* Attendance Table */}
         {attendance.length > 0 ? (
-          <div className="bg-slate-800/50 border border-slate-600 rounded-lg overflow-hidden mb-8">
+          <div className="bg-slate-900/80 border border-slate-700/70 rounded-[2rem] overflow-hidden mb-8 shadow-[0_30px_90px_rgba(8,10,27,0.35)]">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 bg-slate-700/50 border-b border-slate-600 font-semibold text-gray-300">
               <div>Student Name</div>
               <div>Student ID</div>
@@ -295,13 +371,13 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="text-center py-12 text-gray-300 bg-slate-800/50 border border-slate-600 rounded-lg">
+          <div className="text-center py-12 text-gray-300 bg-slate-900/80 border border-slate-700/70 rounded-[2rem] shadow-[0_20px_60px_rgba(8,10,27,0.25)]">
             <Clock size={48} className="mx-auto mb-4 opacity-50" />
             <p>Select a course and date to mark attendance</p>
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

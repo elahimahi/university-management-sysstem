@@ -4,8 +4,20 @@
  * GET /student/assignments
  */
 
+require_once __DIR__ . '/../core/cors.php';
 require_once __DIR__ . '/../core/db_connect.php';
 require_once __DIR__ . '/../auth/auth_helper.php';
+
+// Temporary debugging helpers
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+function tableExists(PDO $pdo, string $tableName): bool {
+    $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?");
+    $stmt->execute([$tableName]);
+    return intval($stmt->fetchColumn() ?? 0) > 0;
+}
 
 $user = getAuthenticatedUser();
 
@@ -30,53 +42,79 @@ try {
     $enrollments = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     if (count($enrollments) > 0) {
-        // Step 2: Get assignments for those courses
-        $courseIds = array_column($enrollments, 'course_id');
-        $placeholders = implode(',', array_fill(0, count($courseIds), '?'));
-        
-        $sql = "
-            SELECT ca.id, ca.course_id, ca.title, ca.description, ca.deadline, ca.created_by,
-                   c.code as course_code, c.name as course_name,
-                   CASE WHEN GETDATE() > ca.deadline THEN 1 ELSE 0 END as is_past_deadline
-            FROM course_assignments ca
-            JOIN courses c ON ca.course_id = c.id
-            WHERE ca.course_id IN ($placeholders)
-            ORDER BY ca.deadline DESC
-        ";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($courseIds);
-        $assignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Step 3: Add submission info using enrollment_id
-        foreach ($assignments as &$assignment) {
-            // Find the enrollment ID for this course
-            $enrollmentId = null;
-            foreach ($enrollments as $enr) {
-                if ($enr['course_id'] == $assignment['course_id']) {
-                    $enrollmentId = $enr['enrollment_id'];
-                    break;
+        if (tableExists($pdo, 'assignment_submissions')) {
+            $stmt = $pdo->prepare("SELECT
+                    ca.id,
+                    ca.course_id,
+                    ca.title,
+                    ca.description,
+                    ca.deadline,
+                    c.code as course_code,
+                    c.name as course_name,
+                    CASE WHEN GETDATE() > ca.deadline THEN 1 ELSE 0 END as is_past_deadline,
+                    asub.id as submission_id,
+                    asub.submission_text,
+                    asub.submitted_at,
+                    asub.feedback_status,
+                    asub.feedback_notes,
+                    asub.is_late
+                FROM course_assignments ca
+                JOIN courses c ON ca.course_id = c.id
+                JOIN enrollments e ON e.course_id = c.id
+                LEFT JOIN assignment_submissions asub ON asub.assignment_id = ca.id AND asub.enrollment_id = e.id
+                WHERE e.student_id = ? AND e.status = 'active'
+                ORDER BY ca.deadline DESC");
+            $stmt->execute([$user['id']]);
+            $assignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($assignments as &$assignment) {
+                $assignment['submission_id'] = isset($assignment['submission_id']) ? intval($assignment['submission_id']) : 0;
+                $assignment['submission_text'] = $assignment['submission_text'] ?? '';
+                $assignment['submitted_at'] = $assignment['submitted_at'] ?? '';
+                $assignment['grade'] = $assignment['feedback_status'] ?? '';
+                $assignment['faculty_feedback'] = $assignment['feedback_notes'] ?? '';
+
+                $isLateFlag = isset($assignment['is_late']) && $assignment['is_late'];
+                $isActuallyLate = false;
+                if ($assignment['submission_id'] && $assignment['submitted_at'] && $assignment['deadline']) {
+                    try {
+                        $submittedAt = new DateTime($assignment['submitted_at']);
+                        $deadline = new DateTime($assignment['deadline']);
+                        $isActuallyLate = $submittedAt > $deadline;
+                    } catch (Exception $e) {
+                        $isActuallyLate = false;
+                    }
                 }
+
+                $assignment['submission_status'] = $assignment['submission_id']
+                    ? (($isLateFlag || $isActuallyLate) ? 'late' : 'submitted')
+                    : 'not_submitted';
             }
-            
-            $submission = null;
-            if ($enrollmentId) {
-                $subStmt = $pdo->prepare("
-                    SELECT id, submission_text, submitted_at, feedback_notes, feedback_status, is_late
-                    FROM assignment_submissions
-                    WHERE assignment_id = ? AND enrollment_id = ?
-                ");
-                $subStmt->execute([$assignment['id'], $enrollmentId]);
-                $submission = $subStmt->fetch(PDO::FETCH_ASSOC);
+        } else {
+            $courseIds = array_column($enrollments, 'course_id');
+            $placeholders = implode(',', array_fill(0, count($courseIds), '?'));
+
+            $sql = "
+                SELECT ca.id, ca.course_id, ca.title, ca.description, ca.deadline,
+                       c.code as course_code, c.name as course_name,
+                       CASE WHEN GETDATE() > ca.deadline THEN 1 ELSE 0 END as is_past_deadline
+                FROM course_assignments ca
+                JOIN courses c ON ca.course_id = c.id
+                WHERE ca.course_id IN ($placeholders)
+                ORDER BY ca.deadline DESC
+            ";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($courseIds);
+            $assignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($assignments as &$assignment) {
+                $assignment['submission_id'] = 0;
+                $assignment['submission_text'] = '';
+                $assignment['submitted_at'] = '';
+                $assignment['grade'] = '';
+                $assignment['faculty_feedback'] = '';
+                $assignment['submission_status'] = 'not_submitted';
             }
-            
-            $assignment['submission_id'] = $submission ? intval($submission['id']) : 0;
-            $assignment['submission_text'] = $submission ? $submission['submission_text'] : '';
-            $assignment['submitted_at'] = $submission ? $submission['submitted_at'] : '';
-            $assignment['grade'] = $submission ? $submission['feedback_status'] : '';
-            $assignment['faculty_feedback'] = $submission ? $submission['feedback_notes'] : '';
-            $assignment['submission_status'] = $submission ? ($submission['is_late'] ? 'late' : 'submitted') : 'not_submitted';
-            // is_past_deadline already calculated by SQL Server query above
         }
     }
     
@@ -89,7 +127,9 @@ try {
     
 } catch (PDOException $e) {
     http_response_code(500);
-    error_log('Student assignments PDO error: ' . $e->getMessage());
+    $errorMessage = 'Student assignments PDO error: ' . $e->getMessage();
+    error_log($errorMessage);
+    file_put_contents(__DIR__ . '/../debug/student_assignments_error.log', $errorMessage . "\n" . $e->getTraceAsString() . "\n\n", FILE_APPEND);
     echo json_encode([
         'status' => 'error',
         'message' => $e->getMessage(),
@@ -97,7 +137,9 @@ try {
     ]);
 } catch (Exception $e) {
     http_response_code(500);
-    error_log('Student assignments error: ' . $e->getMessage());
+    $errorMessage = 'Student assignments error: ' . $e->getMessage();
+    error_log($errorMessage);
+    file_put_contents(__DIR__ . '/../debug/student_assignments_error.log', $errorMessage . "\n" . $e->getTraceAsString() . "\n\n", FILE_APPEND);
     echo json_encode([
         'status' => 'error',
         'message' => $e->getMessage()

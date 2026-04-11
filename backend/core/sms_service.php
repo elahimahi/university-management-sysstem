@@ -78,6 +78,22 @@ class SMSService {
     }
 
     /**
+     * Send overdue fee notification SMS
+     */
+    public function sendOverdueNotification($phone_number, $student_name, $fee_description, $remaining_amount, $days_overdue, $student_id = null) {
+        $this->log("[OVERDUE_NOTIFICATION] Sending SMS to: $phone_number");
+        
+        $message = "⚠️ Encrypt University: OVERDUE NOTICE\n";
+        $message .= "Dear $student_name,\n";
+        $message .= "Your fee '{$fee_description}' is $days_overdue day(s) OVERDUE!\n";
+        $message .= "Amount Due: ৳" . number_format($remaining_amount, 2) . "\n";
+        $message .= "Please pay immediately to avoid penalty charges.\n";
+        $message .= "Contact: support@encryptuniversity.edu";
+
+        return $this->sendSMSMessage($phone_number, $message, 'overdue_notification', $student_id);
+    }
+
+    /**
      * Public method to send SMS with student ID tracking
      */
     public function sendSMS($phone_number, $message, $sms_type, $student_id = null) {
@@ -112,17 +128,19 @@ class SMSService {
                     break;
             }
             
-            // Store SMS record in database
+            // Store SMS record in database regardless of success/failure
+            $status = $result['success'] ? 'sent' : 'failed';
+            $this->logSMSRecord([
+                'student_id' => $student_id,
+                'phone' => $phone_number,
+                'message' => $message,
+                'type' => $sms_type,
+                'provider' => $this->provider,
+                'timestamp' => date('Y-m-d H:i:s'),
+                'status' => $status
+            ]);
+
             if ($result['success']) {
-                $this->logSMSRecord([
-                    'student_id' => $student_id,
-                    'phone' => $phone_number,
-                    'message' => $message,
-                    'type' => $sms_type,
-                    'provider' => $this->provider,
-                    'timestamp' => date('Y-m-d H:i:s'),
-                    'status' => 'sent'
-                ]);
                 $this->log("[SUCCESS] SMS sent via $this->provider to $phone_number");
             } else {
                 $this->log("[ERROR] SMS send failed: " . ($result['error'] ?? 'Unknown error'));

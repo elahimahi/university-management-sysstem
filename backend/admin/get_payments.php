@@ -27,12 +27,28 @@ try {
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
     $offset = ($page - 1) * $limit;
 
-    // Get total count
-    $count_stmt = $pdo->query('SELECT COUNT(*) as total FROM payments');
+    // Deduplicate duplicate payment records by transaction_id, keeping the latest row for each transaction
+    $count_stmt = $pdo->query(
+        "WITH deduped AS (
+            SELECT p.*, ROW_NUMBER() OVER (
+                PARTITION BY CASE WHEN p.transaction_id IS NULL THEN CONCAT('ID_', CAST(p.id AS VARCHAR(50))) ELSE p.transaction_id END
+                ORDER BY p.payment_date DESC, p.id DESC
+            ) AS rn
+            FROM payments p
+        )
+        SELECT COUNT(*) as total FROM deduped WHERE rn = 1"
+    );
     $total = $count_stmt->fetch()['total'];
 
     // Get payments with student info
-    $stmt = $pdo->prepare('
+    $stmt = $pdo->prepare(
+        "WITH deduped AS (
+            SELECT p.*, ROW_NUMBER() OVER (
+                PARTITION BY CASE WHEN p.transaction_id IS NULL THEN CONCAT('ID_', CAST(p.id AS VARCHAR(50))) ELSE p.transaction_id END
+                ORDER BY p.payment_date DESC, p.id DESC
+            ) AS rn
+            FROM payments p
+        )
         SELECT
             p.id,
             p.fee_id,
@@ -44,13 +60,15 @@ try {
             u.first_name,
             u.last_name,
             u.email
-        FROM payments p
+        FROM deduped p
         JOIN fees f ON p.fee_id = f.id
         JOIN users u ON f.student_id = u.id
+        WHERE p.rn = 1
         ORDER BY p.payment_date DESC
         OFFSET ? ROWS
         FETCH NEXT ? ROWS ONLY
-    ');
+    "
+    );
     $stmt->bindParam(1, $offset, PDO::PARAM_INT);
     $stmt->bindParam(2, $limit, PDO::PARAM_INT);
     $stmt->execute();
@@ -71,8 +89,15 @@ try {
         ];
     }, $payments);
 
-    // Get statistics
+    // Get statistics for the deduplicated payment set
     $stats_stmt = $pdo->query("
+        WITH deduped AS (
+            SELECT p.*, ROW_NUMBER() OVER (
+                PARTITION BY CASE WHEN p.transaction_id IS NULL THEN CONCAT('ID_', CAST(p.id AS VARCHAR(50))) ELSE p.transaction_id END
+                ORDER BY p.payment_date DESC, p.id DESC
+            ) AS rn
+            FROM payments p
+        )
         SELECT
             COUNT(*) as total_payments,
             SUM(amount_paid) as total_amount,
@@ -80,7 +105,8 @@ try {
             SUM(CASE WHEN payment_method = 'nagad' THEN 1 ELSE 0 END) as nagad_payments,
             SUM(CASE WHEN payment_method = 'rocket' THEN 1 ELSE 0 END) as rocket_payments,
             SUM(CASE WHEN payment_method = 'card' THEN 1 ELSE 0 END) as card_payments
-        FROM payments
+        FROM deduped
+        WHERE rn = 1
     ");
     $stats = $stats_stmt->fetch();
 

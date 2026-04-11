@@ -7,6 +7,7 @@ export interface User {
   lastName: string;
   role: UserRole;
   profilePicture?: string;
+  phone?: string;
   isEmailVerified: boolean;
   approvalStatus?: 'approved' | 'pending' | 'rejected';
   rejectionReason?: string;
@@ -64,7 +65,7 @@ export interface AuthState {
 
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<{ user: User; tokens: AuthTokens }>;
-  register: (data: RegisterData) => Promise<{ user: User; tokens: AuthTokens }>;
+  register: (data: RegisterData) => Promise<{ user: User; tokens: AuthTokens | null; message?: string }>;
   logout: () => void;
   refreshToken: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;

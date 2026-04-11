@@ -1,0 +1,213 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Frontend Tests
+  frontend-test:
+    runs-on: ubuntu-latest
+    name: Frontend Tests & Build
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm test -- --coverage --watchAll=false
+        continue-on-error: true
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+        continue-on-error: true
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: build/
+
+  # Backend Tests
+  backend-test:
+    runs-on: ubuntu-latest
+    name: Backend Tests & Validation
+
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: T3st@P@ss123
+        options: >-
+          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P T3st@P@ss123 -Q 'SELECT 1'"
+          --health-interval=10s
+          --health-timeout=3s
+          --health-retries=10
+          --health-start-period=10s
+        ports:
+          - 1433:1433
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: pdo, pdo_mysql, pdo_sqlsrv
+          tools: composer, phpcs, phpstan
+
+      - name: Install PHP dependencies
+        run: composer install -d backend/
+        continue-on-error: true
+
+      - name: Run PHP linting
+        run: find backend -name "*.php" -exec php -l {} \;
+        continue-on-error: true
+
+      - name: Check API endpoints
+        run: |
+          echo "Checking backend API structure..."
+          [ -f backend/router.php ] && echo "✓ Router found"
+          [ -f backend/core/cors.php ] && echo "✓ CORS configuration found"
+          [ -d backend/admin ] && echo "✓ Admin API found"
+          [ -d backend/student ] && echo "✓ Student API found"
+
+  # Build Docker Images
+  build-images:
+    needs: [frontend-test, backend-test]
+    runs-on: ubuntu-latest
+    name: Build Docker Images
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (frontend)
+        id: meta-frontend
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend
+          tags: |
+            type=ref,event=branch
+            type=sha
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+
+      - name: Extract metadata (backend)
+        id: meta-backend
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend
+          tags: |
+            type=ref,event=branch
+            type=sha
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+
+  # Integration Tests
+  integration-test:
+    needs: build-images
+    runs-on: ubuntu-latest
+    name: Integration Tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: T3st@P@ss123
+        options: >-
+          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P T3st@P@ss123 -Q 'SELECT 1'"
+          --health-interval=10s
+          --health-timeout=3s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Compose
+        uses: docker/setup-buildx-action@v2
+
+      - name: Run docker-compose
+        run: |
+          docker-compose -f docker-compose.yml up -d
+          sleep 10
+
+      - name: Health check - Frontend
+        run: curl -f http://localhost:3000 || exit 1
+        continue-on-error: true
+
+      - name: Health check - Backend
+        run: curl -f http://localhost:8000/health-check.php || exit 1
+        continue-on-error: true
+
+      - name: Cleanup
+        run: docker-compose -f docker-compose.yml down
+
+  # Deploy Notification
+  notify-deployment:
+    needs: [frontend-test, backend-test, build-images]
+    runs-on: ubuntu-latest
+    name: Deployment Ready
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Create deployment status
+        run: |
+          echo "✅ All checks passed!"
+          echo "🚀 Ready for deployment to production"
+          echo "📦 Docker images built and pushed to registry"

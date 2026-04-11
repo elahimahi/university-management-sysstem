@@ -1,7 +1,6 @@
 <?php
+require_once __DIR__ . '/../core/cors.php';
 require_once __DIR__ . '/../core/db_connect.php';
-
-header('Content-Type: application/json; charset=utf-8');
 
 try {
     // Get a student with enrollments

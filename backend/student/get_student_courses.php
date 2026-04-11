@@ -64,7 +64,11 @@ try {
     echo json_encode([
         'status' => 'success',
         'courses' => $courses,
-        'total' => count($courses)
+        'total' => count($courses),
+        'student' => [
+            'current_semester' => $user['current_semester'] ?? null,
+            'academic_year' => $user['academic_year'] ?? null
+        ]
     ]);
 } catch (PDOException $e) {
     http_response_code(500);

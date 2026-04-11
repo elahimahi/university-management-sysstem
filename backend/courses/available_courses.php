@@ -39,7 +39,26 @@ if (!$user) {
 }
 
 try {
-    // Get all courses with instructor information
+    $requestedSemester = isset($_GET['semester']) ? trim($_GET['semester']) : null;
+
+    // Get student's current semester if no semester was requested
+    $semesterStmt = $pdo->prepare("SELECT current_semester FROM users WHERE id = ?");
+    $semesterStmt->execute([$user['id']]);
+    $userData = $semesterStmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$requestedSemester && (!$userData || !$userData['current_semester'])) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Student semester not set']);
+        exit();
+    }
+
+    $selectedSemester = $requestedSemester ?: $userData['current_semester'];
+
+    $semesterOptionsStmt = $pdo->prepare("SELECT DISTINCT semester FROM courses ORDER BY semester");
+    $semesterOptionsStmt->execute();
+    $semesterOptions = array_column($semesterOptionsStmt->fetchAll(PDO::FETCH_ASSOC), 'semester');
+
+    // Get courses for the selected semester
     $stmt = $pdo->prepare("
         SELECT 
             c.id, 
@@ -48,20 +67,24 @@ try {
             c.credits, 
             c.category, 
             c.level,
+            c.semester,
             c.instructor_id,
             u.first_name,
             u.last_name,
             (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id AND status = 'active') as enrolled_count
         FROM courses c
         LEFT JOIN users u ON c.instructor_id = u.id
+        WHERE c.semester = ?
         ORDER BY c.code
     ");
-    $stmt->execute();
+    $stmt->execute([$selectedSemester]);
     $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([
         'status' => 'success',
         'courses' => $courses,
+        'semester_options' => $semesterOptions,
+        'selected_semester' => $selectedSemester,
         'total' => count($courses)
     ]);
 

@@ -20,4 +20,3 @@ try {
      echo json_encode(['error' => 'Database connection failed: ' . $e->getMessage()]);
      exit;
 }
-?>

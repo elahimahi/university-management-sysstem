@@ -54,7 +54,7 @@ if ($user['role'] !== 'faculty') {
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT id, code, name, credits, category, level FROM courses WHERE instructor_id = ? ORDER BY name");
+    $stmt = $pdo->prepare("SELECT id, code, name, credits, category, level, semester FROM courses WHERE instructor_id = ? ORDER BY name");
     $stmt->execute([$user['id']]);
     $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

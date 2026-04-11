@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # SQL Server Database
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: university_mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${DB_PASSWORD:-P@ssw0rd123}
+      MSSQL_PID: Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    networks:
+      - university_network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${DB_PASSWORD:-P@ssw0rd123} -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # Backend PHP/Apache
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: university_backend
+    ports:
+      - "8000:80"
+    environment:
+      DB_HOST: mssql
+      DB_USER: ${DB_USER:-sa}
+      DB_PASSWORD: ${DB_PASSWORD:-P@ssw0rd123}
+      DB_NAME: ${DB_NAME:-university_db}
+      DB_PORT: 1433
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      mssql:
+        condition: service_healthy
+    networks:
+      - university_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health-check.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Frontend React
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: university_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:8000
+      NODE_ENV: production
+    depends_on:
+      - backend
+    networks:
+      - university_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mssql_data:
+    driver: local
+
+networks:
+  university_network:
+    driver: bridge

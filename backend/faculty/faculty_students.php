@@ -1,25 +1,10 @@
 <?php
+require_once __DIR__ . '/../core/cors.php';
 require_once __DIR__ . '/../core/db_connect.php';
 require_once __DIR__ . '/../auth/auth_helper.php';
 
-// Get authorization token
-$headers = getallheaders();
-$authHeader = $headers['Authorization'] ?? $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-
-if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-    http_response_code(401);
-    echo json_encode(['message' => 'Unauthorized']);
-    exit;
-}
-
-$token = $matches[1];
-$facultyId = verifyToken($token);
-
-if (!$facultyId) {
-    http_response_code(401);
-    echo json_encode(['message' => 'Invalid token']);
-    exit;
-}
+$user = requireFacultyAuth();
+$facultyId = $user['id'];
 
 $method = $_SERVER['REQUEST_METHOD'];
 $data = json_decode(file_get_contents("php://input"), true);

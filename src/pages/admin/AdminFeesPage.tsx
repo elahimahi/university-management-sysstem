@@ -34,6 +34,7 @@ interface CreateFeeForm {
 const AdminFeesPage: React.FC = () => {
   const { user, logout } = useAuth();
   const [fees, setFees] = useState<Fee[]>([]);
+  const [pendingFees, setPendingFees] = useState<Fee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -54,11 +55,18 @@ const AdminFeesPage: React.FC = () => {
     { label: 'Analytics', icon: <BarChart2 size={20} />, href: '/admin/dashboard' },
   ];
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/SD_Project/university-management-sysstem/backend';
 
   useEffect(() => {
     fetchAllFees();
   }, [statusFilter]);
+
+  // Fetch pending fees every 5 seconds for live updates
+  useEffect(() => {
+    fetchPendingFees();
+    const interval = setInterval(fetchPendingFees, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchAllFees = async () => {
     setLoading(true);
@@ -75,6 +83,34 @@ const AdminFeesPage: React.FC = () => {
       setError(err.response?.data?.error || 'Failed to load fees');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingFees = async () => {
+    try {
+      const token = getAccessToken();
+      // Backend already filters status='pending', now we just get them
+      const response = await axios.get(`${API_BASE_URL}/admin/fees`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      // Get ALL fees and filter to only truly pending (not overdue, not paid)
+      const allFees = response.data.fees || [];
+      console.log('Total fees from API:', allFees.length);
+      
+      const pending = allFees.filter((fee: Fee) => {
+        // Only show fees that are pending status and haven't been paid
+        const isPending = fee.current_status === 'pending' && (!fee.total_paid || fee.total_paid === 0);
+        if (isPending) {
+          console.log(`✓ Pending: ${fee.first_name} - ৳${fee.amount}`);
+        }
+        return isPending;
+      });
+      
+      console.log(`Found ${pending.length} pending fees`);
+      setPendingFees(pending);
+    } catch (err: any) {
+      console.error('Error fetching pending fees:', err);
     }
   };
 
@@ -110,6 +146,7 @@ const AdminFeesPage: React.FC = () => {
         status: 'pending',
       });
       fetchAllFees();
+      fetchPendingFees(); // Update pending fees immediately
     } catch (err: any) {
       console.error('Error creating fee:', err);
       toast.error(err.response?.data?.error || 'Failed to create fee');
@@ -265,6 +302,72 @@ const AdminFeesPage: React.FC = () => {
                 <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
               </div>
             </div>
+          )}
+
+          {/* Live Pending Fees Section */}
+          {pendingFees && pendingFees.length > 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mb-8"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400">Live Pending Fees - {pendingFees.length} Pending</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pendingFees.map((fee) => (
+                  <motion.div
+                    key={fee.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ y: -4 }}
+                    transition={{ duration: 0.3 }}
+                    className="p-4 rounded-lg border-2 border-blue-200 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 shadow-lg hover:shadow-xl transition-all"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-bold text-lg text-gray-900 dark:text-white">
+                          {fee.first_name} {fee.last_name}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{fee.email}</p>
+                      </div>
+                      <div className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500 text-white">
+                        Pending
+                      </div>
+                    </div>
+                    <div className="mb-3 border-t border-blue-200 dark:border-blue-700 pt-3">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{fee.description}</p>
+                      <p className="text-2xl font-black text-blue-600 dark:text-blue-400">
+                        ৳{fee.amount.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Due: {new Date(fee.due_date).toLocaleDateString()}
+                      </span>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"
+                      />
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mb-8 p-6 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 text-center"
+            >
+              <div className="inline-block text-4xl mb-2">✓</div>
+              <p className="text-gray-600 dark:text-gray-400 font-semibold">All fees paid 👍</p>
+              <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">No pending fees at the moment</p>
+            </motion.div>
           )}
 
           {/* Status Filter */}

@@ -59,7 +59,7 @@ const Navbar: React.FC<NavbarProps> = ({
         fixed top-0 left-0 right-0 z-40
         transition-all duration-300
         ${isScrolled 
-          ? 'bg-white/80 dark:bg-navy-900/80 backdrop-blur-lg shadow-lg' 
+          ? 'bg-navy-950/95 border-b border-white/10 backdrop-blur-xl shadow-soft-lg' 
           : 'bg-transparent'
         }
       `}
@@ -92,7 +92,7 @@ const Navbar: React.FC<NavbarProps> = ({
               <Link key={index} to={item.href}>
                 <motion.div
                   whileHover={{ y: -2 }}
-                  className="px-4 py-2 rounded-lg text-navy-700 dark:text-navy-200 hover:bg-navy-100 dark:hover:bg-navy-800 hover:text-gold-600 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 rounded-2xl transition-colors flex items-center gap-2 text-slate-200 hover:bg-navy-900/70 hover:text-white"
                 >
                   {item.icon}
                   <span className="font-medium">{item.label}</span>

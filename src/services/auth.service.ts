@@ -11,22 +11,44 @@ import {
 import { getAccessToken, getRefreshToken } from '../utils/auth.utils';
 
 // API base URL - Points to backend server
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/university-management-sysstem/backend';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/SD_Project/university-management-sysstem/backend';
 
 /**
- * Generate a mock JWT token for testing
+ * Decode a JWT token payload without verifying signature.
  */
-const generateMockJWT = (expiresInSeconds: number = 3600): string => {
+const decodeJWT = (token: string): Record<string, any> | null => {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload;
+  } catch (error) {
+    console.warn('[auth.service] decodeJWT failed', error);
+    return null;
+  }
+};
+
+/**
+ * Generate a mock JWT token for testing.
+ */
+const generateMockJWT = (
+  expiresInSeconds: number = 3600,
+  payloadOverrides: Record<string, any> = {}
+): string => {
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = btoa(
-    JSON.stringify({
-      sub: '1',
-      email: 'user@example.com',
-      role: 'student',
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
-    })
-  );
+  const defaultPayload = {
+    sub: '1',
+    email: 'user@example.com',
+    role: 'student',
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
+  };
+  const payload = btoa(JSON.stringify({
+    ...defaultPayload,
+    ...payloadOverrides,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
+  }));
   const signature = btoa('mock_signature');
   return `${header}.${payload}.${signature}`;
 };
@@ -35,9 +57,12 @@ const generateMockJWT = (expiresInSeconds: number = 3600): string => {
 console.debug('[auth.service] using API_BASE_URL =', API_BASE_URL);
 const authApi = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
+  timeout: 30000,
 });
 
 // Response interceptor mainly for debugging network issues
@@ -92,9 +117,9 @@ export const loginUser = async (
     };
     const tokens = response.data.tokens;
     const mappedTokens: AuthTokens = {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      expiresIn: tokens.expiresIn,
+      accessToken: tokens.access_token || tokens.accessToken,
+      refreshToken: tokens.refresh_token || tokens.refreshToken,
+      expiresIn: tokens.expires_in || tokens.expiresIn,
     };
     return { user: mappedUser, tokens: mappedTokens };
   } catch (error: any) {
@@ -112,7 +137,7 @@ export const loginUser = async (
  */
 export const registerUser = async (
   data: RegisterData
-): Promise<{ user: User; tokens: AuthTokens }> => {
+): Promise<{ user: User; tokens: AuthTokens | null; message?: string }> => {
   try {
     console.debug('[auth.service] registerUser data', data);
     const response = await authApi.post(
@@ -135,12 +160,18 @@ export const registerUser = async (
       updatedAt: user.updated_at,
     };
     const tokens = response.data.tokens;
-    const mappedTokens: AuthTokens = {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      expiresIn: tokens.expiresIn,
+    const mappedTokens: AuthTokens | null = tokens
+      ? {
+          accessToken: tokens.access_token || tokens.accessToken,
+          refreshToken: tokens.refresh_token || tokens.refreshToken,
+          expiresIn: tokens.expires_in || tokens.expiresIn,
+        }
+      : null;
+    return {
+      user: mappedUser,
+      tokens: mappedTokens,
+      message: response.data.message,
     };
-    return { user: mappedUser, tokens: mappedTokens };
   } catch (error: any) {
     console.error('[auth.service] registerUser failed', {
       message: error.message,
@@ -214,12 +245,17 @@ export const refreshAccessToken = async (): Promise<AuthTokens> => {
       throw new Error('No refresh token available');
     }
 
+    const existingPayload = decodeJWT(refreshToken);
+    const sub = existingPayload?.sub || existingPayload?.user_id || '1';
+    const email = existingPayload?.email || 'user@example.com';
+    const role = existingPayload?.role || 'student';
+
     // const response = await authApi.post('/auth/refresh', { refreshToken });
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     return {
-      accessToken: generateMockJWT(3600), // 1 hour
-      refreshToken: generateMockJWT(604800), // 7 days
+      accessToken: generateMockJWT(3600, { sub, email, role }), // 1 hour
+      refreshToken: generateMockJWT(604800, { sub, email, role }), // 7 days
       expiresIn: 3600,
     };
   } catch (error) {
