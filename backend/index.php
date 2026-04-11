@@ -28,13 +28,7 @@ if (!headers_sent()) {
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
-// Strip the base path for Apache
-$basePath = '/Database_Project/Database-main/Database-main/backend';
-if (strpos($requestUri, $basePath) === 0) {
-    $requestUri = substr($requestUri, strlen($basePath));
-}
-
-// Remove leading/trailing slashes and get the route
+// Remove leading/trailing slashes for routing (works with PHP built-in server)
 $route = strtolower(trim($requestUri, '/'));
 
 // If route is empty (root request), handle separately

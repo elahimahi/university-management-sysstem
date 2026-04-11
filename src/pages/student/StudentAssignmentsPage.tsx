@@ -1,224 +1,119 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Textarea } from '../../components/ui/textarea';
-import { Badge } from '../../components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
-import { AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { assignmentService, CourseAssignment } from '../../services/assignment.service';
-import toast from 'react-hot-toast';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Clock, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
+import PageTransition from '../../components/ui/PageTransition';
+import { useNotifications } from '../../hooks/useNotifications';
+import NotificationContainer from '../../components/ui/NotificationContainer';
 
-const StudentAssignmentsPage: React.FC = () => {
-  const [assignments, setAssignments] = useState<CourseAssignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedAssignment, setSelectedAssignment] = useState<CourseAssignment | null>(null);
-  const [submissionText, setSubmissionText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
+};
 
-  useEffect(() => {
-    loadAssignments();
-  }, []);
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
 
-  const loadAssignments = async () => {
-    try {
-      setLoading(true);
-      const data = await assignmentService.getStudentAssignments();
-      setAssignments(data || []);
-      if (data && data.length > 0) {
-        toast.success(`Loaded ${data.length} assignments`);
-      }
-    } catch (error: any) {
-      console.error('[StudentAssignmentsPage] Error loading assignments:', error);
-      toast.error('Failed to load assignments');
-    } finally {
-      setLoading(false);
-    }
-  };
+const StudentAttendancePage: React.FC = () => {
+  const { notifications, remove } = useNotifications();
 
-  const handleSubmit = async () => {
-    if (!selectedAssignment || !submissionText.trim()) return;
-
-    setSubmitting(true);
-    try {
-      await assignmentService.submitAssignment({
-        assignment_id: selectedAssignment.id,
-        submission_text: submissionText,
-      });
-      toast.success('Assignment submitted successfully');
-      setSubmissionText('');
-      setSelectedAssignment(null);
-      loadAssignments(); // Refresh to update status
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to submit assignment');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const getStatusBadge = (assignment: CourseAssignment) => {
-    if (assignment.submission_status === 'not_submitted') {
-      if (assignment.is_past_deadline) {
-        return <Badge variant="destructive">Overdue</Badge>;
-      }
-      return <Badge variant="secondary">Not Submitted</Badge>;
-    }
-    if (assignment.submission_status === 'submitted') {
-      return <Badge variant="default" className="bg-green-500">Submitted</Badge>;
-    }
-    return <Badge variant="outline">Late</Badge>;
-  };
-
-  const canSubmit = (assignment: CourseAssignment) => {
-    return assignment.submission_status === 'not_submitted' && !assignment.is_past_deadline;
-  };
-
-  const getGradeBadgeColor = (grade?: string) => {
-    switch (grade) {
-      case 'excellent':
-        return 'bg-green-500';
-      case 'good':
-        return 'bg-blue-500';
-      case 'average':
-        return 'bg-yellow-500';
-      case 'late':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  if (loading) {
-    return <div className="p-6">Loading assignments...</div>;
-  }
+  const attendance = [
+    { course: 'Data Structures', present: 32, absent: 2, late: 1, percentage: 94 },
+    { course: 'Web Development', present: 28, absent: 3, late: 2, percentage: 88 },
+    { course: 'Database Design', present: 35, absent: 1, late: 0, percentage: 97 },
+    { course: 'Algorithms', present: 30, absent: 4, late: 1, percentage: 86 },
+  ];
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">My Assignments</h1>
+    <PageTransition variant="fade">
+      <NotificationContainer notifications={notifications} onClose={remove} />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-navy-900 to-slate-950 p-4 md:p-8">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="mb-8"
+          >
+            <h1 className="text-5xl font-bold text-white mb-2 flex items-center gap-3">
+              <Clock size={32} className="text-blue-400" /> Attendance
+            </h1>
+            <p className="text-gray-400">Track your class attendance</p>
+          </motion.div>
 
-      <div className="grid gap-4">
-        {assignments.map((assignment) => (
-          <Card key={assignment.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{assignment.title}</CardTitle>
-                  <p className="text-sm text-gray-600">
-                    {assignment.course_code} - {assignment.course_name}
-                  </p>
-                  {assignment.subject && (
-                    <p className="text-sm text-gray-500">Subject: {assignment.subject}</p>
-                  )}
-                </div>
-                {getStatusBadge(assignment)}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4">{assignment.description}</p>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span className="text-sm">
-                    Deadline: {new Date(assignment.deadline).toLocaleString()}
+          {/* Overall Stats */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+          >
+            {[
+              { label: 'Overall Attendance', value: '92%', icon: TrendingUp, color: 'from-green-500 to-emerald-500' },
+              { label: 'Classes Present', value: '125', icon: CheckCircle, color: 'from-blue-500 to-cyan-500' },
+              { label: 'Classes Absent', value: '10', icon: AlertCircle, color: 'from-red-500 to-pink-500' },
+              { label: 'Classes Late', value: '4', icon: Clock, color: 'from-yellow-500 to-orange-500' },
+            ].map((stat, idx) => {
+              const Icon = stat.icon;
+              return (
+                <motion.div
+                  key={idx}
+                  variants={itemVariants}
+                  className={`p-6 rounded-2xl border border-white/10 bg-gradient-to-br ${stat.color} bg-opacity-10 backdrop-blur`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-400 text-sm mb-2">{stat.label}</p>
+                      <h3 className="text-3xl font-bold text-white">{stat.value}</h3>
+                    </div>
+                    <Icon size={32} className="opacity-20" />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+
+          {/* Attendance by Course */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-4"
+          >
+            {attendance.map((item, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                className="p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur hover:border-white/20 transition-all"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-white">{item.course}</h3>
+                  <span className={`px-4 py-2 rounded-lg font-bold ${item.percentage >= 85 ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
+                    {item.percentage}%
                   </span>
                 </div>
-                {assignment.is_past_deadline && (
-                  <div className="flex items-center gap-2 text-red-500">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm">Past deadline</span>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Present</p>
+                    <p className="text-2xl font-bold text-green-400">{item.present}</p>
                   </div>
-                )}
-              </div>
-
-              {/* Show submitted content and feedback if already submitted */}
-              {assignment.submission_status !== 'not_submitted' && (
-                <div className="space-y-3 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-sm">Your Submission</h4>
-                    <span className={`text-xs px-2 py-1 rounded text-white ${assignment.submission_status === 'late' ? 'bg-orange-500' : 'bg-green-500'}`}>
-                      {assignment.submission_status === 'late' ? 'Late Submission' : 'Submitted'}
-                    </span>
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Absent</p>
+                    <p className="text-2xl font-bold text-red-400">{item.absent}</p>
                   </div>
-
-                  {assignment.submitted_at && (
-                    <p className="text-xs text-gray-600">
-                      Submitted: {new Date(assignment.submitted_at).toLocaleString()}
-                    </p>
-                  )}
-
-                  <div className="bg-white p-3 rounded border border-gray-200 max-h-40 overflow-y-auto">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{assignment.submission_text}</p>
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Late</p>
+                    <p className="text-2xl font-bold text-yellow-400">{item.late}</p>
                   </div>
-
-                  {/* Show grade and feedback if graded */}
-                  {assignment.grade && (
-                    <div className="space-y-2 pt-2 border-t border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Grade:</span>
-                        <Badge className={`${getGradeBadgeColor(assignment.grade)} text-white`}>
-                          {assignment.grade.charAt(0).toUpperCase() + assignment.grade.slice(1)}
-                        </Badge>
-                      </div>
-
-                      {assignment.faculty_feedback && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-700 mb-1">Faculty Feedback:</p>
-                          <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{assignment.faculty_feedback}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
-              )}
-
-              {canSubmit(assignment) && (
-                <Dialog open={selectedAssignment?.id === assignment.id} onOpenChange={() => setSelectedAssignment(null)}>
-                  <DialogTrigger asChild>
-                    <Button onClick={() => setSelectedAssignment(assignment)}>
-                      Submit Assignment
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Submit Assignment: {assignment.title}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <Textarea
-                        placeholder="Enter your submission..."
-                        value={submissionText}
-                        onChange={(e) => setSubmissionText(e.target.value)}
-                        rows={6}
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setSelectedAssignment(null)}>
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={handleSubmit}
-                          disabled={submitting || !submissionText.trim()}
-                        >
-                          {submitting ? 'Submitting...' : 'Submit'}
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-
-        {assignments.length === 0 && (
-          <Card>
-            <CardContent className="p-6 text-center text-gray-500">
-              No assignments found
-            </CardContent>
-          </Card>
-        )}
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </PageTransition>
   );
 };
 
-export default StudentAssignmentsPage;
+export default StudentAttendancePage;

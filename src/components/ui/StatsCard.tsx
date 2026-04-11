@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, useAnimation } from 'framer-motion';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
 export interface StatsCardProps {
   title: string;
@@ -11,7 +12,9 @@ export interface StatsCardProps {
     value: number;
     isPositive: boolean;
   };
-  color?: 'navy' | 'gold' | 'success' | 'warning' | 'error';
+  color?: 'navy' | 'gold' | 'success' | 'warning' | 'error' | 'blue' | 'purple';
+  size?: 'sm' | 'md' | 'lg';
+  description?: string;
 }
 
 const StatsCard: React.FC<StatsCardProps> = ({
@@ -22,22 +25,34 @@ const StatsCard: React.FC<StatsCardProps> = ({
   icon,
   trend,
   color = 'navy',
+  size = 'md',
+  description,
 }) => {
   const [count, setCount] = useState(0);
   const controls = useAnimation();
 
   const colorClasses = {
-    navy: 'from-navy-500 to-navy-700',
-    gold: 'from-gold-500 to-gold-700',
-    success: 'from-success-500 to-success-700',
-    warning: 'from-warning-500 to-warning-700',
-    error: 'from-error-500 to-error-700',
+    navy: 'from-slate-600 via-navy-600 to-navy-800',
+    gold: 'from-amber-500 via-yellow-500 to-orange-600',
+    success: 'from-emerald-500 via-green-500 to-teal-600',
+    warning: 'from-orange-500 via-amber-500 to-orange-700',
+    error: 'from-red-500 via-rose-500 to-red-700',
+    blue: 'from-blue-500 via-cyan-500 to-blue-700',
+    purple: 'from-purple-500 via-indigo-500 to-purple-700',
   };
+
+  const sizeClasses = {
+    sm: { icon: 24, titleSize: 'text-sm', valueSize: 'text-2xl', padding: 'p-4' },
+    md: { icon: 32, titleSize: 'text-base', valueSize: 'text-3xl', padding: 'p-6' },
+    lg: { icon: 40, titleSize: 'text-lg', valueSize: 'text-4xl', padding: 'p-8' },
+  };
+
+  const sizeConfig = sizeClasses[size];
 
   useEffect(() => {
     controls.start({
-      scale: [1, 1.05, 1],
-      transition: { duration: 0.5 },
+      scale: [1, 1.02, 1],
+      transition: { duration: 0.6, ease: 'easeInOut' },
     });
 
     // Counting animation
@@ -88,7 +103,8 @@ const StatsCard: React.FC<StatsCardProps> = ({
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: 'spring', stiffness: 200, delay: 0.3 }}
-              className={`w-12 h-12 rounded-lg bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center text-white shadow-lg`}
+              className={`w-14 h-14 rounded-xl bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center text-white shadow-lg`}
+              style={{ fontSize: `${sizeConfig.icon}px` }}
             >
               {icon}
             </motion.div>
@@ -101,24 +117,35 @@ const StatsCard: React.FC<StatsCardProps> = ({
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4 }}
-            className="flex items-center gap-2"
+            className={`flex items-center gap-2 ${sizeConfig.titleSize}`}
           >
-            <span className={`flex items-center gap-1 text-sm font-semibold ${trend.isPositive ? 'text-success-600' : 'text-error-600'}`}>
+            <span className={`flex items-center gap-1 font-semibold ${trend.isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
               {trend.isPositive ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
+                <TrendingUp size={16} strokeWidth={3} />
               ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                </svg>
+                <TrendingDown size={16} strokeWidth={3} />
               )}
               {trend.value}%
             </span>
-            <span className="text-sm text-navy-600 dark:text-navy-400">vs last month</span>
+            <span className="text-navy-500 dark:text-navy-400">vs last month</span>
           </motion.div>
         )}
+
+        {/* Description */}
+        {description && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-xs text-navy-500 dark:text-navy-400 mt-2"
+          >
+            {description}
+          </motion.p>
+        )}
       </div>
+
+      {/* Card Border Animation */}
+      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
     </motion.div>
   );
 };
