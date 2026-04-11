@@ -1,21 +1,9 @@
-FROM php:8.3-cli
+FROM php:8.1-apache
 
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpq-dev \
-    libmariadb-dev \
-    libmariadb-dev-compat \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN docker-php-ext-install pdo_mysql mysqli pdo
-
-WORKDIR /var/www/html
+RUN a2dismod mpm_event mpm_worker && \
+    a2enmod mpm_prefork rewrite
 
 COPY . /var/www/html/
 
-RUN chmod -R 755 /var/www/html
-
-EXPOSE 8080
-
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
+RUN chown -R www-data:www-data /var/www/html && \
+    chmod -R 755 /var/www/html
