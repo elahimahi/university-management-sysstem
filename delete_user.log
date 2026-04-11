@@ -1,0 +1,22 @@
+[2026-04-11 16:09:58] === DELETE USER REQUEST STARTED ===
+[2026-04-11 16:09:58] Method: DELETE
+[2026-04-11 16:09:58] User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0
+[2026-04-11 16:09:58] DB and Auth loaded
+[2026-04-11 16:09:58] User authenticated: ID=31, Role=superadmin
+[2026-04-11 16:09:58] Raw input: {"user_id":"60"}
+[2026-04-11 16:09:58] Attempting to delete user ID: 60
+[2026-04-11 16:09:58] Target user found: role=faculty
+[2026-04-11 16:09:58] Starting deletion cascade
+[2026-04-11 16:09:58] Deleted 0 rows from fees
+[2026-04-11 16:09:58] Deleted 0 rows from grades
+[2026-04-11 16:09:58] Deleted 0 rows from enrollments
+[2026-04-11 16:09:58] Table submissions delete error (ignored): SQLSTATE[42S02]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid object name 'submissions'.
+[2026-04-11 16:09:58] Table attendance delete error (ignored): SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+[2026-04-11 16:09:58] Table assignment_submissions delete error (ignored): SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+[2026-04-11 16:09:58] Deleted 0 rows from payment_transactions
+[2026-04-11 16:09:58] Deleted 0 rows from course_assignments
+[2026-04-11 16:09:58] Deleted 2 rows from notifications
+[2026-04-11 16:09:58] Updated courses table
+[2026-04-11 16:09:58] Updated users.approved_by
+[2026-04-11 16:09:58] User 60 deleted successfully
+[2026-04-11 16:09:58] === DELETE SUCCESS ===
