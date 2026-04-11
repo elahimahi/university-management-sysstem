@@ -34,12 +34,12 @@ try {
             e.semester,
             e.status as enrollment_status,
             e.enrolled_at,
-            AVG(CAST(g.grade_point as FLOAT)) as current_grade,
+            AVG(CAST(g.points as FLOAT)) as current_grade,
             COUNT(g.id) as grades_count
         FROM courses c
         JOIN enrollments e ON c.id = e.course_id
         JOIN users u ON e.student_id = u.id
-        LEFT JOIN grades g ON e.id = g.enrollment_id
+        LEFT JOIN grades g ON e.student_id = g.student_id AND e.course_id = g.course_id
         WHERE c.instructor_id = ?
         GROUP BY 
             u.id, u.first_name, u.last_name, u.email,

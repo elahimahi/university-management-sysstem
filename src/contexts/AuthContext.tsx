@@ -73,8 +73,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Record login activity for students
       if (response.user?.role === 'student' && response.tokens?.accessToken) {
         try {
-          const apiUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-          await axios.post(`${apiUrl}/grades/record_login.php`, {}, {
+          const apiUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/university-management-sysstem/backend';
+          await axios.post(`${apiUrl}/student/record-login-activity`, {}, {
             headers: {
               Authorization: `Bearer ${response.tokens.accessToken}`,
             },

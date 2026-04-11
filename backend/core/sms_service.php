@@ -36,11 +36,11 @@ class SMSService {
     /**
      * Send payment confirmation SMS
      */
-    public function sendPaymentConfirmation($phone_number, $student_name, $amount, $payment_method, $remaining_amount) {
+    public function sendPaymentConfirmation($phone_number, $student_name, $amount, $payment_method, $remaining_amount, $student_id = null) {
         $this->log("[PAYMENT_CONFIRMATION] Sending SMS to: $phone_number");
         
-        // Get pending fees count
-        $pending_count = $this->getPendingFeesCount($phone_number);
+        // Get pending fees count for the student if available
+        $pending_count = $this->getPendingFeesCount($student_id, $phone_number);
         
         // SMS Message Format
         $message = "Encrypt University: Payment Confirmed!\n";
@@ -59,22 +59,22 @@ class SMSService {
         
         $message .= "Contact: support@encryptuniversity.edu";
 
-        return $this->sendSMS($phone_number, $message, 'payment_confirmation');
+        return $this->sendSMS($phone_number, $message, 'payment_confirmation', $student_id);
     }
 
     /**
      * Send pending fees reminder SMS
      */
-    public function sendPendingFeesReminder($phone_number, $student_name, $total_pending, $pending_count, $total_amount) {
+    public function sendPendingFeesReminder($phone_number, $student_name, $total_pending, $pending_count, $total_amount, $student_id = null) {
         $this->log("[PENDING_REMINDER] Sending SMS to: $phone_number");
         
         $message = "Encrypt University: Fee Reminder\n";
         $message .= "Dear $student_name,\n";
-        $message .= "You have $pending_count pending fee(s) totaling ৳" . number_format($total_amount, 2) . ".\n";
+        $message .= "You have $pending_count pending fee(s) totaling ৳" . number_format($total_pending, 2) . ".\n";
         $message .= "Please pay by the due date to avoid penalties.\n";
         $message .= "Contact: support@encryptuniversity.edu";
 
-        return $this->sendSMSMessage($phone_number, $message, 'pending_reminder');
+        return $this->sendSMSMessage($phone_number, $message, 'pending_reminder', $student_id);
     }
 
     /**
@@ -326,22 +326,52 @@ class SMSService {
      */
     private function ensureSMSTableExists() {
         try {
-            $this->pdo->query('SELECT TOP 1 * FROM sms_logs');
+            $tableExists = $this->pdo->query("SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'sms_logs'")->fetch()['count'];
+            if (!$tableExists) {
+                $create_table = "
+                CREATE TABLE sms_logs (
+                    id INT PRIMARY KEY IDENTITY(1,1),
+                    student_id INT NULL,
+                    phone_number VARCHAR(20) NOT NULL,
+                    message NVARCHAR(MAX) NOT NULL,
+                    sms_type VARCHAR(50),
+                    sent_at DATETIME,
+                    status VARCHAR(20) DEFAULT 'sent',
+                    provider VARCHAR(20) DEFAULT 'test',
+                    delivery_status VARCHAR(20) DEFAULT 'pending',
+                    created_at DATETIME DEFAULT GETDATE()
+                )
+                ";
+                $this->pdo->exec($create_table);
+                return;
+            }
+
+            $columnExists = $this->pdo->query("SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'sms_logs' AND COLUMN_NAME = 'student_id'")->fetch()['count'];
+            if (!$columnExists) {
+                $this->pdo->exec('ALTER TABLE sms_logs ADD student_id INT NULL');
+            }
         } catch (Exception $e) {
-            // Table doesn't exist, create it
-            $create_table = "
-            CREATE TABLE sms_logs (
-                id INT PRIMARY KEY IDENTITY(1,1),
-                phone_number VARCHAR(20),
-                message NVARCHAR(MAX),
-                sms_type VARCHAR(50),
-                sent_at DATETIME,
-                status VARCHAR(20) DEFAULT 'sent',
-                provider VARCHAR(20) DEFAULT 'test',
-                created_at DATETIME DEFAULT GETDATE()
-            )
-            ";
-            $this->pdo->exec($create_table);
+            // If table cannot be read or schema is invalid, try recreating it
+            try {
+                $this->pdo->exec('IF OBJECT_ID(\'sms_logs\', \'U\') IS NOT NULL DROP TABLE sms_logs');
+                $create_table = "
+                CREATE TABLE sms_logs (
+                    id INT PRIMARY KEY IDENTITY(1,1),
+                    student_id INT NULL,
+                    phone_number VARCHAR(20) NOT NULL,
+                    message NVARCHAR(MAX) NOT NULL,
+                    sms_type VARCHAR(50),
+                    sent_at DATETIME,
+                    status VARCHAR(20) DEFAULT 'sent',
+                    provider VARCHAR(20) DEFAULT 'test',
+                    delivery_status VARCHAR(20) DEFAULT 'pending',
+                    created_at DATETIME DEFAULT GETDATE()
+                )
+                ";
+                $this->pdo->exec($create_table);
+            } catch (Exception $inner) {
+                $this->log("[DB_ERROR] Could not ensure sms_logs table exists: " . $inner->getMessage());
+            }
         }
     }
 
@@ -375,11 +405,14 @@ class SMSService {
     }
 
     /**
-     * Get count of pending fees
+     * Get count of pending fees.
+     * Accepts either student_id or phone number.
      */
-    private function getPendingFeesCount($phone_number) {
+    private function getPendingFeesCount($student_id = null, $phone_number = null) {
         try {
-            $student_id = $this->getStudentIdByPhone($phone_number);
+            if (!$student_id && $phone_number) {
+                $student_id = $this->getStudentIdByPhone($phone_number);
+            }
             if (!$student_id) return 0;
             
             $stmt = $this->pdo->prepare('SELECT COUNT(*) as count FROM fees WHERE student_id = ? AND status != ?');

@@ -334,7 +334,7 @@ const StudentAttendancePage: React.FC = () => {
                           record.status
                         )}`}
                       >
-                        {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                        {record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : 'N/A'}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">

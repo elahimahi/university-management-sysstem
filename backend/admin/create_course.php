@@ -1,17 +1,38 @@
 <?php
+// ============================================
+// ABSOLUTE FIRST LINE - CORS HEADERS
+// ============================================
+http_response_code(200);
+header('Access-Control-Allow-Origin: *', true);
+header('Access-Control-Allow-Credentials: true', true);
+header('Access-Control-Max-Age: 86400', true);
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD', true);
+header('Access-Control-Allow-Headers: Content-Type, Accept, X-Requested-With, Authorization, Origin', true);
+header('Content-Type: application/json; charset=utf-8', true);
+
+// Handle OPTIONS for preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit(0);
+}
+
+// ============================================
+// NOW execute logic
+// ============================================
 require_once __DIR__ . '/../core/db_connect.php';
 
-header('Content-Type: application/json');
-
 $data = json_decode(file_get_contents("php://input"), true);
+error_log("CREATE_COURSE: Received data: " . json_encode($data));
 
 if (!isset($data['code']) || !isset($data['name'])) {
     http_response_code(400);
-    echo json_encode(['message' => 'Course code and name are required']);
+    echo json_encode(['status' => 'error', 'message' => 'Course code and name are required']);
     exit;
 }
 
 try {
+    error_log("CREATE_COURSE: Attempting to create course with code=" . $data['code'] . ", name=" . $data['name']);
+    
     $stmt = $pdo->prepare("
         INSERT INTO courses (code, name, credits, category, level, instructor_id)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -25,6 +46,8 @@ try {
         $data['level'] ?? 'Undergraduate',
         $data['instructor_id'] ?? null
     ]);
+    
+    error_log("CREATE_COURSE: Successfully created course");
 
     http_response_code(201);
     echo json_encode([
@@ -34,12 +57,13 @@ try {
     ]);
 
 } catch (PDOException $e) {
+    error_log("CREATE_COURSE: PDO Error - " . $e->getMessage());
     if ($e->getCode() == 23000) {
         http_response_code(409);
-        echo json_encode(['message' => 'Course code already exists']);
+        echo json_encode(['status' => 'error', 'message' => 'Course code already exists']);
     } else {
         http_response_code(500);
-        echo json_encode(['message' => 'Database error: ' . $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
     }
 }
 ?>
