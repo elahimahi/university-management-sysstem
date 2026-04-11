@@ -1,0 +1,80 @@
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(82): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(82): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(82): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(82): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'faculty_feedback'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(88): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'faculty_feedback'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(88): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'faculty_feedback'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(88): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'faculty_feedback'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(88): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'id'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(46): PDOStatement->execute()
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'id'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(46): PDOStatement->execute()
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'faculty_feedback'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(69): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'faculty_feedback'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(69): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(67): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(67): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(67): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
+Student assignments PDO error: SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'student_id'.
+#0 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\student\get_course_assignments.php(67): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\SD_Project\university-management-sysstem\backend\index.php(125): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+
