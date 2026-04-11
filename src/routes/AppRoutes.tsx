@@ -35,7 +35,6 @@ import StudentAssignmentsPage from '../pages/student/StudentAssignmentsPage';
 import StudentFeesPage from '../pages/student/StudentFeesPage';
 import StudentNotificationsPage from '../pages/student/StudentNotificationsPage';
 
-
 import AdminFeesPage from '../pages/admin/AdminFeesPage';
 import AdminVerificationPage from '../pages/admin/AdminVerificationPage';
 import UserManagementPage from '../pages/admin/UserManagementPage';
@@ -50,13 +49,12 @@ const DashboardRedirect: React.FC = () => {
   if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  // Check if user is pending approval or rejected
   if (user?.approvalStatus === 'pending' || user?.approvalStatus === 'rejected') {
     return <Navigate to="/pending-approval" replace />;
   }
 
   const role = user?.role?.toLowerCase();
-  if (role === 'admin' || role === 'superadmin') return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'admin' || role === 'super_admin') return <Navigate to="/admin/dashboard" replace />;
   if (role === 'faculty') return <Navigate to="/faculty/dashboard" replace />;
   return <Navigate to="/student/dashboard" replace />;
 };
@@ -66,7 +64,6 @@ const AppRoutes: React.FC = () => {
     <Router>
       <SessionTimeout />
       <Routes>
-        {/* Protected Home Page - requires authentication */}
         <Route
           path="/"
           element={
@@ -121,7 +118,6 @@ const AppRoutes: React.FC = () => {
           }
         />
 
-        {/* Auth Routes (redirect to home if already authenticated) */}
         <Route
           path="/login"
           element={
@@ -147,7 +143,6 @@ const AppRoutes: React.FC = () => {
           }
         />
 
-        {/* Pending Approval Page - for users waiting for superadmin approval */}
         <Route
           path="/pending-approval"
           element={
@@ -157,20 +152,14 @@ const AppRoutes: React.FC = () => {
           }
         />
 
-        {/* Demo Routes */}
         <Route path="/demo" element={<ThemeDemo />} />
         <Route path="/components" element={<ComponentDemo />} />
-
-        {/* Database Viewer Route */}
         <Route path="/database" element={<DatabaseViewer />} />
-
-        {/* Main Navigation Sections */}
         <Route path="/programs" element={<ProgramsPage />} />
         <Route path="/news" element={<NewsPage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/about" element={<AboutPage />} />
 
-        {/* Faculty Section Routes */}
         <Route
           path="/faculty/courses"
           element={
@@ -219,7 +208,6 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        {/* Grade submission routes removed - faculty grade submission disabled */}
         <Route
           path="/faculty/reports"
           element={
@@ -229,8 +217,6 @@ const AppRoutes: React.FC = () => {
           }
         />
 
-
-        {/* Student Section Routes */}
         <Route
           path="/student/overview"
           element={
@@ -297,11 +283,10 @@ const AppRoutes: React.FC = () => {
           }
         />
 
-
         <Route
           path="/admin"
           element={
-            <ProtectedRoute requireAuth={true} allowedRoles={['admin', 'superadmin']}>
+            <ProtectedRoute requireAuth={true} allowedRoles={['admin', 'super_admin']}>
               <SuperAdminDashboard />
             </ProtectedRoute>
           }
@@ -309,7 +294,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/admin/dashboard"
           element={
-            <ProtectedRoute requireAuth={true} allowedRoles={['admin', 'superadmin']}>
+            <ProtectedRoute requireAuth={true} allowedRoles={['admin', 'super_admin']}>
               <SuperAdminDashboard />
             </ProtectedRoute>
           }
@@ -317,7 +302,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/admin/fees"
           element={
-            <ProtectedRoute requireAuth={true} allowedRoles={['admin', 'superadmin']}>
+            <ProtectedRoute requireAuth={true} allowedRoles={['admin', 'super_admin']}>
               <FeesManagementPage />
             </ProtectedRoute>
           }
@@ -325,7 +310,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/admin/verify"
           element={
-            <ProtectedRoute requireAuth={true} allowedRoles={['superadmin']}>
+            <ProtectedRoute requireAuth={true} allowedRoles={['super_admin']}>
               <AdminVerificationPage />
             </ProtectedRoute>
           }
@@ -333,7 +318,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/admin/users"
           element={
-            <ProtectedRoute requireAuth={true} allowedRoles={['admin', 'superadmin']}>
+            <ProtectedRoute requireAuth={true} allowedRoles={['admin', 'super_admin']}>
               <UserManagementPage />
             </ProtectedRoute>
           }
@@ -341,13 +326,12 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/admin/courses"
           element={
-            <ProtectedRoute requireAuth={true} allowedRoles={['admin', 'superadmin']}>
+            <ProtectedRoute requireAuth={true} allowedRoles={['admin', 'super_admin']}>
               <CoursesManagementPage />
             </ProtectedRoute>
           }
         />
 
-        {/* Fallback Route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
