@@ -142,9 +142,11 @@ const FacultyGradesSubmissionPage: React.FC = () => {
   const gradeScale = [
     { label: 'A+ (90-100)', value: 'A+' },
     { label: 'A (85-89)', value: 'A' },
-    { label: 'B+ (80-84)', value: 'B+' },
+    { label: 'A- (82-84)', value: 'A-' },
+    { label: 'B+ (80-81)', value: 'B+' },
     { label: 'B (75-79)', value: 'B' },
-    { label: 'C+ (70-74)', value: 'C+' },
+    { label: 'B- (72-74)', value: 'B-' },
+    { label: 'C+ (70-71)', value: 'C+' },
     { label: 'C (65-69)', value: 'C' },
     { label: 'D (60-64)', value: 'D' },
     { label: 'F (Below 60)', value: 'F' },

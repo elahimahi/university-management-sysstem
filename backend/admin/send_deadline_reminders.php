@@ -16,6 +16,27 @@ require_once __DIR__ . '/../core/db_connect.php';
 require_once __DIR__ . '/../core/sms_service.php';
 header('Content-Type: application/json');
 
+function ensureAdminNotificationsTransactionColumn($pdo) {
+    try {
+        $pdo->exec("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('admin_notifications') AND name = 'transaction_id') ALTER TABLE admin_notifications ADD transaction_id VARCHAR(100) NULL");
+    } catch (Exception $e) {
+        error_log('Failed to ensure admin_notifications.transaction_id column: ' . $e->getMessage());
+    }
+}
+
+function reminderNotificationExists($pdo, $student_id, $fee_id) {
+    $stmt = $pdo->prepare('SELECT 1 FROM admin_notifications WHERE student_id = ? AND fee_id = ? AND payment_method = ?');
+    $stmt->execute([$student_id, $fee_id, 'reminder']);
+    return (bool) $stmt->fetch();
+}
+
+function insertReminderNotification($pdo, $student_id, $fee_id, $amount, $fee_description, $due_date) {
+    ensureAdminNotificationsTransactionColumn($pdo);
+    $notifyStmt = $pdo->prepare('INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status) VALUES (?, ?, ?, ?, ?, ?)');
+    $description = "Payment due soon for {$fee_description} (due {$due_date})";
+    $notifyStmt->execute([$student_id, $fee_id, $amount, 'reminder', $description, 'unread']);
+}
+
 $data = json_decode(file_get_contents('php://input'), true);
 $hours_before = $data['hours_before_deadline'] ?? 24;
 $status = $data['status'] ?? 'pending';
@@ -84,7 +105,11 @@ try {
             $reminder_message .= "এখনই পেমেন্ট করুন। যোগাযোগ: support@university.edu";
 
             $result = $sms_service->sendSMS($phone, $reminder_message, 'pending_reminder', $student_id);
-            
+
+            if (!reminderNotificationExists($pdo, $fee['fee_id'])) {
+                insertReminderNotification($pdo, $student_id, $fee['fee_id'], $remaining, $fee['description'], $deadline_formatted);
+            }
+
             $reminders_sent[] = [
                 'fee_id' => $fee['fee_id'],
                 'student_id' => $student_id,

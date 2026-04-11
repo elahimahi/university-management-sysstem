@@ -1,0 +1,70 @@
+name: Code Quality Checks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality Checks
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Check for console logs (Frontend)
+        run: |
+          if grep -r "console\." src/ --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" | grep -v "console\.error\|console\.warn"; then
+            echo "⚠️ Found console logs in source code"
+            exit 1
+          fi
+        continue-on-error: true
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: pdo, pdo_mysql, pdo_sqlsrv
+
+      - name: PHP Linting (Backend)
+        run: |
+          find backend -name "*.php" -exec php -l {} \;
+
+      - name: Check PHP Code Style (Backend)
+        run: |
+          if [ -f backend/.phpcs.xml ] || [ -f backend/phpcs.xml ]; then
+            cd backend && phpcs --standard=PSR12 . || true
+          fi
+        continue-on-error: true
+
+      - name: Security Check - Composer
+        run: |
+          compver=$(composer --version)
+          echo "Using: $compver"
+          cd backend
+          composer audit || true
+        continue-on-error: true
+
+      - name: Check for hardcoded credentials
+        run: |
+          if grep -r "password\|secret\|api_key" backend/ --include="*.php" | grep -i "=\s*['\"]" | grep -v "placeholder\|example\|todo"; then
+            echo "⚠️ Found potential hardcoded credentials"
+            exit 1
+          fi
+        continue-on-error: true
+
+      - name: Summary Report
+        run: echo "✅ Code quality checks completed"

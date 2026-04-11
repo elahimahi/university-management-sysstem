@@ -1,28 +1,10 @@
 <?php
+require_once __DIR__ . '/../core/cors.php';
 require_once __DIR__ . '/../core/db_connect.php';
 require_once __DIR__ . '/../auth/auth_helper.php';
 
-$headers = getallheaders();
-$authHeader = $headers['Authorization'] ?? '';
-
-if (!$authHeader && isset($_SERVER['HTTP_AUTHORIZATION'])) {
-    $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
-}
-
-if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-    http_response_code(401);
-    echo json_encode(['message' => 'Unauthorized']);
-    exit;
-}
-
-$token = $matches[1];
-$userId = verifyToken($token);
-
-if (!$userId) {
-    http_response_code(401);
-    echo json_encode(['message' => 'Invalid or expired token']);
-    exit;
-}
+$user = requireFacultyAuth();
+$userId = $user['id'];
 
 try {
     // Fetch all students enrolled in any course taught by this faculty member

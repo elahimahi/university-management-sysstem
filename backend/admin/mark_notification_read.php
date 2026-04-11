@@ -25,17 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../core/db_connect.php';
 require_once __DIR__ . '/../auth/auth_helper.php';
 
-// Check if user is superadmin
-$user = requireAuth();
-if ($user['role'] !== 'superadmin') {
-    http_response_code(403);
-    echo json_encode(['error' => 'Unauthorized - SuperAdmin access required']);
-    exit;
-}
+$user = requireAdminAuth();
 
 try {
     $data = json_decode(file_get_contents('php://input'), true);
     $notification_id = $data['notification_id'] ?? null;
+    $notification_type = $data['notification_type'] ?? 'payment'; // Default to payment for backward compatibility
 
     if (!$notification_id) {
         http_response_code(400);
@@ -43,12 +38,22 @@ try {
         exit;
     }
 
-    // Update notification status
-    $stmt = $pdo->prepare('
-        UPDATE admin_notifications 
-        SET status = ? 
-        WHERE id = ?
-    ');
+    // Update notification status based on type
+    if ($notification_type === 'registration') {
+        $stmt = $pdo->prepare('
+            UPDATE notifications 
+            SET status = ? 
+            WHERE id = ?
+        ');
+    } else {
+        // Payment notification
+        $stmt = $pdo->prepare('
+            UPDATE admin_notifications 
+            SET status = ? 
+            WHERE id = ?
+        ');
+    }
+    
     $stmt->execute(['read', $notification_id]);
 
     http_response_code(200);

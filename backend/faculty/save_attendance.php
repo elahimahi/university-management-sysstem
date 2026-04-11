@@ -1,7 +1,14 @@
 <?php
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Origin, Accept');
+header('Access-Control-Max-Age: 86400');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 require_once __DIR__ . '/../core/db_connect.php';
 
@@ -67,11 +74,7 @@ try {
     
     file_put_contents($logFile, "  Found " . count($enrollments) . " enrollments for course $course_id\n", FILE_APPEND);
 
-<<<<<<< HEAD
     // Insert or update attendance records
-=======
-    // Insert new records using enrollment_id
->>>>>>> dev
     $insertQuery = "INSERT INTO attendance (enrollment_id, date, status) VALUES (?, ?, ?)";
     $insertStmt = $pdo->prepare($insertQuery);
     
@@ -104,17 +107,13 @@ try {
         file_put_contents($logFile, "    Record $idx: enrollment_id=$enrollmentId, status=$status\n", FILE_APPEND);
 
         try {
-<<<<<<< HEAD
             // Try to insert new record
-=======
->>>>>>> dev
             $result = $insertStmt->execute([$enrollmentId, $date, $status]);
             if ($result) {
                 $inserted++;
                 file_put_contents($logFile, "      ✓ Inserted\n", FILE_APPEND);
             }
         } catch (PDOException $e) {
-<<<<<<< HEAD
             // If duplicate key violation, update instead
             $error_msg = strtoupper($e->getMessage());
             if (strpos($error_msg, 'UNIQUE') !== false || strpos($error_msg, 'DUPLICATE') !== false) {
@@ -129,14 +128,51 @@ try {
             } else {
                 file_put_contents($logFile, "      Error: " . $e->getMessage() . "\n", FILE_APPEND);
             }
-=======
-            file_put_contents($logFile, "      Error: " . $e->getMessage() . "\n", FILE_APPEND);
-            // Continue with next record
->>>>>>> dev
         }
     }
 
     $pdo->commit();
+
+    // Recalculate updated attendance summary for this course
+    $attendanceSummary = [
+        'total' => 0,
+        'presentCount' => 0,
+        'lateCount' => 0,
+        'absentCount' => 0,
+        'attendanceRate' => 0,
+    ];
+
+    try {
+        $summaryStmt = $pdo->prepare("\
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as presentCount,
+                SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) as lateCount,
+                SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absentCount,
+                AVG(CASE 
+                    WHEN status = 'present' THEN 1.0
+                    WHEN status = 'late' THEN 0.5
+                    WHEN status = 'absent' THEN 0.0
+                    ELSE 0.0
+                END) as avgRate
+            FROM attendance
+            WHERE enrollment_id IN (SELECT id FROM enrollments WHERE course_id = ?)
+        ");
+        $summaryStmt->execute([$course_id]);
+        $summaryData = $summaryStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($summaryData) {
+            $attendanceSummary = [
+                'total' => intval($summaryData['total'] ?? 0),
+                'presentCount' => intval($summaryData['presentCount'] ?? 0),
+                'lateCount' => intval($summaryData['lateCount'] ?? 0),
+                'absentCount' => intval($summaryData['absentCount'] ?? 0),
+                'attendanceRate' => isset($summaryData['avgRate']) ? round(floatval($summaryData['avgRate']) * 100, 1) : 0,
+            ];
+        }
+    } catch (PDOException $e) {
+        // Leave attendance summary as zeros if summary query fails
+    }
 
     file_put_contents($logFile, "  Success: $inserted inserted, $skipped skipped\n", FILE_APPEND);
 
@@ -146,7 +182,8 @@ try {
         'message' => "Attendance saved for $inserted students",
         'inserted' => $inserted,
         'skipped' => $skipped,
-        'total' => count($records)
+        'total' => count($records),
+        'attendanceSummary' => $attendanceSummary
     ]);
 
 } catch (Exception $e) {

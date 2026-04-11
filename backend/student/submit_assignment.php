@@ -7,6 +7,7 @@
  * Requires authentication and student role.
  */
 
+require_once __DIR__ . '/../core/cors.php';
 require_once __DIR__ . '/../core/db_connect.php';
 require_once __DIR__ . '/../auth/auth_helper.php';
 
@@ -23,6 +24,12 @@ if ($user['role'] !== 'student') {
     http_response_code(403);
     echo json_encode(['status' => 'error', 'message' => 'Only students can submit assignments']);
     exit();
+}
+
+function tableExists(PDO $pdo, string $tableName): bool {
+    $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?");
+    $stmt->execute([$tableName]);
+    return intval($stmt->fetchColumn() ?? 0) > 0;
 }
 
 // Get POST data
@@ -50,12 +57,12 @@ $submissionText = trim($data['submission_text']);
 try {
     // Check if assignment exists and student is enrolled in the course
     $stmt = $pdo->prepare("
-        SELECT ca.deadline, e.id as enrollment_id
-        FROM course_assignments ca
-        JOIN courses c ON ca.course_id = c.id
-        JOIN enrollments e ON c.id = e.course_id
-        WHERE ca.id = ? AND e.student_id = ? AND e.status = 'active'
-    ");
+            SELECT ca.deadline, e.id as enrollment_id
+            FROM course_assignments ca
+            JOIN courses c ON ca.course_id = c.id
+            JOIN enrollments e ON c.id = e.course_id
+            WHERE ca.id = ? AND e.student_id = ? AND e.status = 'active'
+        ");
     $stmt->execute([$assignmentId, $user['id']]);
     $assignment = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -65,9 +72,17 @@ try {
         exit();
     }
 
-    // Check if already submitted
+    $enrollmentId = $assignment['enrollment_id'] ?? null;
+
+    if (!tableExists($pdo, 'assignment_submissions')) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Submission storage is not available on this server']);
+        exit();
+    }
+
     $stmt = $pdo->prepare("SELECT id FROM assignment_submissions WHERE assignment_id = ? AND enrollment_id = ?");
-    $stmt->execute([$assignmentId, $assignment['enrollment_id']]);
+    $stmt->execute([$assignmentId, $enrollmentId]);
+
     if ($stmt->fetch()) {
         http_response_code(409);
         echo json_encode(['status' => 'error', 'message' => 'You have already submitted this assignment']);
@@ -77,20 +92,15 @@ try {
     // Check deadline
     $currentTime = date('Y-m-d H:i:s');
     if ($currentTime > $assignment['deadline']) {
-        // Insert as late submission
-        $stmt = $pdo->prepare("INSERT INTO assignment_submissions (assignment_id, enrollment_id, submission_text, is_late) VALUES (?, ?, ?, 1)");
-        $stmt->execute([$assignmentId, $assignment['enrollment_id'], $submissionText]);
-        $status = 'late';
+        $isLate = 1;
     } else {
-        // Insert as on-time submission
-        $stmt = $pdo->prepare("INSERT INTO assignment_submissions (assignment_id, enrollment_id, submission_text, is_late) VALUES (?, ?, ?, 0)");
-        $stmt->execute([$assignmentId, $assignment['enrollment_id'], $submissionText]);
-        $status = 'submitted';
+        $isLate = 0;
     }
 
-    $submissionId = $pdo->lastInsertId();
+    $stmt = $pdo->prepare("INSERT INTO assignment_submissions (assignment_id, enrollment_id, submission_text, is_late) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$assignmentId, $enrollmentId, $submissionText, $isLate]);
 
-    // Get the inserted submission
+    $submissionId = $pdo->lastInsertId();
     $stmt = $pdo->prepare("SELECT * FROM assignment_submissions WHERE id = ?");
     $stmt->execute([$submissionId]);
     $submission = $stmt->fetch(PDO::FETCH_ASSOC);

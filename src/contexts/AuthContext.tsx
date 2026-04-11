@@ -73,8 +73,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Record login activity for students
       if (response.user?.role === 'student' && response.tokens?.accessToken) {
         try {
-          const apiUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
-          await axios.post(`${apiUrl}/grades/record_login.php`, {}, {
+          const apiUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost/SD_Project/university-management-sysstem/backend';
+          await axios.post(`${apiUrl}/student/record-login-activity`, {}, {
             headers: {
               Authorization: `Bearer ${response.tokens.accessToken}`,
             },
@@ -106,20 +106,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const response = await registerUser(data);
 
-      // Store tokens
-      if (response.tokens) {
+      // Store tokens only if they exist (for approved users like admins)
+      if (response.tokens && response.tokens.accessToken) {
         storeTokens(response.tokens.accessToken, response.tokens.refreshToken, true);
       }
 
       setState({
         user: response.user,
-        tokens: response.tokens,
-        isAuthenticated: true,
+        tokens: response.tokens || null,
+        isAuthenticated: !!response.tokens, // Only authenticated if tokens exist
         isLoading: false,
         error: null,
       });
 
-      toast.success('Registration successful!');
+      if (response.tokens && response.tokens.accessToken) {
+        toast.success('Registration successful!');
+      } else if (response.message) {
+        toast.success(response.message);
+      }
       return response;
     } catch (error) {
       const errorMessage = formatAuthError(error);

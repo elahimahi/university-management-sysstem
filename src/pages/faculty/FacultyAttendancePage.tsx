@@ -1,9 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAccessToken } from '../../utils/auth.utils';
-import { Clock, Check, X } from 'lucide-react';
+import {
+  Clock,
+  Check,
+  X,
+  Users,
+  Calendar,
+  Settings,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+  TrendingUp,
+  BookOpen,
+  Save,
+  Loader,
+} from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 interface Course {
@@ -50,7 +64,7 @@ const FacultyAttendancePage: React.FC = () => {
     absent_marks: 0
   });
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/SD_Project/university-management-sysstem/backend';
 
   // Fetch faculty courses
   useEffect(() => {
@@ -174,208 +188,353 @@ const FacultyAttendancePage: React.FC = () => {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 },
+    },
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen bg-white dark:bg-navy-900 p-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
+      className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 p-4 md:p-8"
     >
       <Toaster position="top-right" />
 
-      <div className="flex items-center gap-3 mb-6">
-        <Clock className="w-8 h-8 text-green-500" />
-        <h1 className="text-3xl font-bold">Mark Attendance</h1>
+      {/* Animated background blobs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ y: [0, -40, 0], x: [0, 30, 0] }}
+          transition={{ duration: 15, repeat: Infinity }}
+          className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 blur-3xl"
+        />
+        <motion.div
+          animate={{ y: [0, 40, 0], x: [0, -30, 0] }}
+          transition={{ duration: 18, repeat: Infinity }}
+          className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-gradient-to-tr from-purple-500/20 to-pink-500/20 blur-3xl"
+        />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Course Selection */}
-        <div>
-          <label className="block text-sm font-semibold mb-2">Select Course</label>
-          <select
-            value={selectedCourse || ''}
-            onChange={(e) => setSelectedCourse(Number(e.target.value) || null)}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-navy-600 bg-white dark:bg-navy-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Hero Header */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="mb-12"
+        >
+          <motion.div variants={itemVariants} className="flex items-center gap-4 mb-6">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+            >
+              <Clock className="w-12 h-12 text-cyan-400" />
+            </motion.div>
+            <div>
+              <p className="text-cyan-300 font-semibold text-sm uppercase tracking-widest">Faculty Dashboard</p>
+              <h1 className="text-5xl md:text-6xl font-black text-white mt-2">Mark Attendance</h1>
+            </div>
+          </motion.div>
+          <motion.p variants={itemVariants} className="text-cyan-200/80 text-lg max-w-3xl">
+            Track student attendance across your courses with real-time statistics and intuitive marking.
+          </motion.p>
+        </motion.div>
+
+        {/* Course and Date Selection */}
+        <motion.div
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10"
+        >
+          {/* Course Selection */}
+          <div className="group">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/50 to-blue-500/50 rounded-2xl blur opacity-0 group-hover:opacity-30 transition duration-300" />
+            <div className="relative">
+              <label className="block text-cyan-300 text-sm font-bold uppercase tracking-widest mb-3">
+                <BookOpen className="w-4 h-4 inline mr-2" />
+                Select Course
+              </label>
+              <select
+                value={selectedCourse || ''}
+                onChange={(e) => setSelectedCourse(Number(e.target.value) || null)}
+                className="w-full px-6 py-4 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-2xl text-white font-semibold focus:outline-none focus:border-cyan-500 transition appearance-none cursor-pointer hover:border-cyan-500/50"
+              >
+                <option value="">Choose a course...</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.code} - {course.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Date Selection */}
+          <div className="group">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/50 to-pink-500/50 rounded-2xl blur opacity-0 group-hover:opacity-30 transition duration-300" />
+            <div className="relative">
+              <label className="block text-purple-300 text-sm font-bold uppercase tracking-widest mb-3">
+                <Calendar className="w-4 h-4 inline mr-2" />
+                Attendance Date
+              </label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-6 py-4 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-2xl text-white font-semibold focus:outline-none focus:border-purple-500 transition cursor-pointer hover:border-purple-500/50"
+              />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Attendance Marks Configuration */}
+        {selectedCourse && (
+          <motion.div
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            className="mb-10 group"
           >
-            <option value="">Choose a course...</option>
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.code} - {course.name}
-              </option>
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/30 to-cyan-500/30 rounded-3xl blur opacity-0 group-hover:opacity-50 transition duration-300" />
+            <div className="relative bg-slate-900/60 backdrop-blur border border-slate-700 rounded-3xl p-8">
+              {/* Header with Settings Icon */}
+              <div className="flex items-center gap-3 mb-6">
+                <Settings className="w-6 h-6 text-blue-400" />
+                <h2 className="text-2xl font-bold text-white">Mark Configuration</h2>
+              </div>
+
+              {/* Mark Settings Grid */}
+              <div className="grid grid-cols-3 gap-6">
+                {[
+                  { label: 'Present Marks', key: 'present_marks', icon: CheckCircle2, color: 'from-emerald-500 to-emerald-600' },
+                  { label: 'Late Marks', key: 'late_marks', icon: AlertCircle, color: 'from-amber-500 to-amber-600' },
+                  { label: 'Absent Marks', key: 'absent_marks', icon: XCircle, color: 'from-red-500 to-red-600' },
+                ].map((item: any, idx) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.div
+                      key={item.key}
+                      variants={itemVariants}
+                      className="group/mark"
+                    >
+                      <div className={`absolute inset-0 bg-gradient-to-br ${item.color} rounded-2xl opacity-10 group-hover/mark:opacity-20 transition`} />
+                      <div className="relative">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Icon className="w-5 h-5 text-slate-300" />
+                          <label className="text-sm font-bold text-slate-300 uppercase tracking-wider">{item.label}</label>
+                        </div>
+                        <input
+                          type="number"
+                          value={(markSettings as any)[item.key]}
+                          onChange={(e) => setMarkSettings({ ...markSettings, [item.key]: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white font-bold text-center focus:outline-none focus:border-cyan-500 transition"
+                          step="0.1"
+                          min="0"
+                        />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Statistics Cards */}
+        {statistics && (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"
+          >
+            {[
+              { icon: Users, label: 'Total Students', value: statistics.total_students || 0, color: 'from-blue-500 to-blue-600' },
+              { icon: CheckCircle2, label: 'Present', value: statistics.present_count || 0, color: 'from-emerald-500 to-emerald-600' },
+              { icon: AlertCircle, label: 'Late', value: statistics.late_count || 0, color: 'from-amber-500 to-amber-600' },
+              { icon: XCircle, label: 'Absent', value: statistics.absent_count || 0, color: 'from-red-500 to-red-600' },
+            ].map((stat, idx) => (
+              <motion.div
+                key={idx}
+                variants={itemVariants}
+                whileHover={{ translateY: -8, scale: 1.02 }}
+                className="group relative"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-300`} />
+                <div className="relative bg-slate-900/80 backdrop-blur border border-slate-700 rounded-2xl p-6 flex items-center gap-4">
+                  <div className={`bg-gradient-to-br ${stat.color} p-3 rounded-xl`}>
+                    <stat.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">{stat.label}</p>
+                    <p className="text-white text-2xl font-bold">{stat.value}</p>
+                  </div>
+                </div>
+              </motion.div>
             ))}
-          </select>
-        </div>
+          </motion.div>
+        )}
 
-        {/* Date Selection */}
-        <div>
-          <label className="block text-sm font-semibold mb-2">Date</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-navy-600 bg-white dark:bg-navy-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-        </div>
-      </div>
+        {/* Student List */}
+        {selectedCourse && (
+          <>
+            {loading ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center justify-center py-24"
+              >
+                <div className="text-center">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    className="mb-6"
+                  >
+                    <Users className="w-16 h-16 text-cyan-400 mx-auto" />
+                  </motion.div>
+                  <motion.div
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="text-white text-2xl font-bold"
+                  >
+                    Loading students...
+                  </motion.div>
+                </div>
+              </motion.div>
+            ) : students.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-24 bg-slate-900/40 backdrop-blur border border-slate-700/50 rounded-3xl"
+              >
+                <Users className="w-24 h-24 text-slate-500 mx-auto mb-4" />
+                <p className="text-2xl font-bold text-white mb-2">No Students Enrolled</p>
+                <p className="text-slate-300">Students will appear here once they enroll in this course</p>
+              </motion.div>
+            ) : (
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="space-y-4 mb-8"
+              >
+                {students.map((student, index) => (
+                  <motion.div
+                    key={`${student.enrollment_id}-${date}-${index}`}
+                    variants={itemVariants}
+                    whileHover={{ y: -4, x: 8 }}
+                    className="group relative"
+                  >
+                    <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-3xl opacity-0 group-hover:opacity-100 blur transition duration-300" />
 
-      {/* Attendance Marks Settings */}
-      {selectedCourse && (
-        <div className="mb-8 rounded-xl shadow-lg bg-gradient-to-br from-blue-50 to-white dark:from-navy-800 dark:to-navy-900 p-6 border border-blue-100 dark:border-navy-700">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <span className="text-blue-600 dark:text-blue-400">⚙️</span>
-            Attendance Marks Configuration
-          </h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-semibold mb-2">Present Marks</label>
-              <input
-                type="number"
-                value={markSettings.present_marks}
-                onChange={(e) => setMarkSettings({ ...markSettings, present_marks: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-navy-600 bg-white dark:bg-navy-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                step="0.1"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2">Late Marks</label>
-              <input
-                type="number"
-                value={markSettings.late_marks}
-                onChange={(e) => setMarkSettings({ ...markSettings, late_marks: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-navy-600 bg-white dark:bg-navy-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                step="0.1"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2">Absent Marks</label>
-              <input
-                type="number"
-                value={markSettings.absent_marks}
-                onChange={(e) => setMarkSettings({ ...markSettings, absent_marks: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-navy-600 bg-white dark:bg-navy-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                step="0.1"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+                    <div className="relative bg-slate-900/60 backdrop-blur border border-slate-700 rounded-3xl p-6 md:p-8 hover:border-cyan-500/50 transition">
+                      {/* Top animated bar */}
+                      <motion.div
+                        className="absolute top-0 left-0 h-1 bg-gradient-to-r from-cyan-500 to-blue-500"
+                        initial={{ width: 0 }}
+                        whileHover={{ width: '100%' }}
+                        transition={{ duration: 0.3 }}
+                      />
 
-      {/* Statistics */}
-      {statistics && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-            <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">Total Students</div>
-            <div className="text-2xl font-bold text-green-600">{statistics.total_students || 0}</div>
-          </div>
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-            <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">Present</div>
-            <div className="text-2xl font-bold text-blue-600">{statistics.present_count || 0}</div>
-          </div>
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-            <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">Late</div>
-            <div className="text-2xl font-bold text-yellow-600">{statistics.late_count || 0}</div>
-          </div>
-          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
-            <div className="text-sm font-semibold text-gray-600 dark:text-gray-300">Absent</div>
-            <div className="text-2xl font-bold text-red-600">{statistics.absent_count || 0}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Student List */}
-      {selectedCourse && (
-        <div className="rounded-xl shadow-lg bg-gradient-to-br from-green-50 to-white dark:from-navy-800 dark:to-navy-900 p-6 border border-green-100 dark:border-navy-700">
-          <h2 className="text-xl font-semibold mb-4">Students</h2>
-
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
-            </div>
-          ) : students.length === 0 ? (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-8">No students enrolled in this course</p>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-300 dark:border-navy-600">
-                      <th className="text-left py-3 px-4 font-semibold">Name</th>
-                      <th className="text-left py-3 px-4 font-semibold">Email</th>
-                      <th className="text-center py-3 px-4 font-semibold">Attendance</th>
-                      <th className="text-center py-3 px-4 font-semibold">Marks</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {students.map((student, index) => (
-                      <tr key={`${student.enrollment_id}-${date}-${index}`} className="border-b border-gray-200 dark:border-navy-700 hover:bg-gray-50 dark:hover:bg-navy-700/50">
-                        <td className="py-3 px-4">{student.first_name} {student.last_name}</td>
-                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{student.email}</td>
-                        <td className="py-3 px-4">
-                          <div className="flex justify-center gap-2">
-                            <button
-                              onClick={() => handleAttendanceChange(student.enrollment_id, 'present')}
-                              className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
-                                attendanceRecords.get(student.enrollment_id) === 'present'
-                                  ? 'bg-green-500 text-white'
-                                  : 'bg-gray-200 dark:bg-navy-600 text-gray-700 dark:text-gray-300'
-                              }`}
-                            >
-                              <Check size={16} className="inline mr-1" />
-                              Present
-                            </button>
-                            <button
-                              onClick={() => handleAttendanceChange(student.enrollment_id, 'late')}
-                              className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
-                                attendanceRecords.get(student.enrollment_id) === 'late'
-                                  ? 'bg-yellow-500 text-white'
-                                  : 'bg-gray-200 dark:bg-navy-600 text-gray-700 dark:text-gray-300'
-                              }`}
-                            >
-                              Late
-                            </button>
-                            <button
-                              onClick={() => handleAttendanceChange(student.enrollment_id, 'absent')}
-                              className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
-                                attendanceRecords.get(student.enrollment_id) === 'absent'
-                                  ? 'bg-red-500 text-white'
-                                  : 'bg-gray-200 dark:bg-navy-600 text-gray-700 dark:text-gray-300'
-                              }`}
-                            >
-                              <X size={16} className="inline mr-1" />
-                              Absent
-                            </button>
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        {/* Student Info */}
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-bold text-lg">
+                              {student.first_name.charAt(0)}{student.last_name.charAt(0)}
+                            </span>
                           </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center justify-center gap-2">
+                          <div>
+                            <h3 className="text-xl font-bold text-white group-hover:text-cyan-300 transition">
+                              {student.first_name} {student.last_name}
+                            </h3>
+                            <p className="text-slate-400 text-sm">{student.email}</p>
+                          </div>
+                        </div>
+
+                        {/* Attendance Buttons */}
+                        <div className="flex gap-3 md:gap-2 flex-wrap md:flex-nowrap md:flex-shrink-0">
+                          {[
+                            { status: 'present', label: 'Present', icon: Check, color: 'from-emerald-500 to-emerald-600', textColor: 'text-emerald-300' },
+                            { status: 'late', label: 'Late', icon: AlertCircle, color: 'from-amber-500 to-amber-600', textColor: 'text-amber-300' },
+                            { status: 'absent', label: 'Absent', icon: X, color: 'from-red-500 to-red-600', textColor: 'text-red-300' },
+                          ].map((btn: any) => {
+                            const BtnIcon = btn.icon;
+                            const isActive = attendanceRecords.get(student.enrollment_id) === btn.status;
+                            return (
+                              <motion.button
+                                key={btn.status}
+                                onClick={() => handleAttendanceChange(student.enrollment_id, btn.status)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`relative px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+                                  isActive
+                                    ? `bg-gradient-to-br ${btn.color} text-white shadow-lg`
+                                    : `bg-slate-800 border border-slate-600 ${btn.textColor} hover:border-slate-500`
+                                }`}
+                              >
+                                <BtnIcon className="w-4 h-4" />
+                                <span className="hidden sm:inline">{btn.label}</span>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Marks Input */}
+                        <div className="flex items-center gap-3 md:flex-shrink-0">
+                          <div className="relative flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-2">
+                            <TrendingUp className="w-4 h-4 text-yellow-400" />
                             <input
                               type="number"
                               value={attendanceMarks.get(student.enrollment_id) || 0}
                               onChange={(e) => handleMarksChange(student.enrollment_id, parseFloat(e.target.value) || 0)}
-                              className="w-16 px-2 py-1 rounded-lg border border-gray-300 dark:border-navy-600 bg-white dark:bg-navy-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                              className="w-16 bg-transparent text-white font-bold text-center outline-none"
                               step="0.1"
+                              min="0"
                             />
-                            <span className="text-sm text-gray-500 dark:text-gray-400">pts</span>
+                            <span className="text-slate-400 text-sm font-semibold">pts</span>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
 
-              <button
+            {/* Save Button */}
+            {students.length > 0 && (
+              <motion.button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="mt-6 w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-all"
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:from-gray-500 disabled:to-gray-600 text-white font-bold py-4 px-8 rounded-2xl transition-all flex items-center justify-center gap-3 text-lg shadow-lg"
               >
-                {loading ? 'Saving...' : 'Save Attendance'}
-              </button>
-            </>
-          )}
-        </div>
-      )}
+                <Save className="w-6 h-6" />
+                {loading ? 'Saving Attendance...' : 'Save Attendance'}
+              </motion.button>
+            )}
+          </>
+        )}
+      </div>
     </motion.div>
   );
 };

@@ -36,12 +36,20 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
-    "server": "php -S localhost:8000 -t backend backend/router.php",
+    "test": "react-scripts test --coverage --watchAll=false",
+    "test:watch": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "test:integration": "npm run build && docker-compose -f docker-compose.yml up -d && sleep 5 && curl http://localhost:3000",
+    "server": "php -S localhost:5000 -t backend backend/router.php",
     "eject": "react-scripts eject",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
     "lint": "eslint src/**/*.{js,jsx,ts,tsx}",
-    "lint:fix": "eslint src/**/*.{js,jsx,ts,tsx} --fix"
+    "lint:fix": "eslint src/**/*.{js,jsx,ts,tsx} --fix",
+    "docker:build": "docker-compose build --no-cache",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart"
   },
   "eslintConfig": {
     "extends": [

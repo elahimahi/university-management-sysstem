@@ -7,6 +7,7 @@
  * For testing/admin purposes only.
  */
 
+require_once __DIR__ . '/../core/cors.php';
 require_once __DIR__ . '/../core/db_connect.php';
 require_once __DIR__ . '/../auth/auth_helper.php';
 

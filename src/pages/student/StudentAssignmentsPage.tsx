@@ -15,7 +15,6 @@ const StudentAssignmentsPage: React.FC = () => {
   const [selectedAssignment, setSelectedAssignment] = useState<CourseAssignment | null>(null);
   const [submissionText, setSubmissionText] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'submitted' | 'overdue'>('all');
 
   useEffect(() => {
     loadAssignments();
@@ -48,10 +47,7 @@ const StudentAssignmentsPage: React.FC = () => {
       });
 
       const responseStatus = response?.submission_status || 'submitted';
-      const submittedAt = response?.submission?.submitted_at || response?.submitted_at || new Date().toISOString();
-      const wasLate = responseStatus.toString().toLowerCase() === 'late' || new Date(submittedAt) > new Date(selectedAssignment.deadline);
-
-      if (responseStatus === 'late' || wasLate) {
+      if (responseStatus === 'late') {
         toast.success('Late submission recorded');
       } else {
         toast.success('Assignment submitted successfully');
@@ -64,8 +60,8 @@ const StudentAssignmentsPage: React.FC = () => {
                 ...assignment,
                 submission_status: responseStatus,
                 submission_text: submissionText,
-                submitted_at: submittedAt,
-                is_past_deadline: wasLate,
+                submitted_at: response?.submission?.submitted_at || new Date().toISOString(),
+                is_past_deadline: true,
               }
             : assignment
         )
@@ -95,18 +91,9 @@ const StudentAssignmentsPage: React.FC = () => {
     return false;
   };
 
-  const isOverdueAssignment = (assignment: CourseAssignment) => {
-    if (assignment.submission_status?.toString().toLowerCase() !== 'not_submitted') {
-      return false;
-    }
-
-    const deadline = new Date(assignment.deadline).getTime();
-    return Boolean(assignment.is_past_deadline) || deadline < Date.now();
-  };
-
   const getStatusBadge = (assignment: CourseAssignment) => {
     const status = assignment.submission_status || 'not_submitted';
-    const overdue = isOverdueAssignment(assignment);
+    const overdue = Boolean(assignment.is_past_deadline);
     const lateSubmission = isLateSubmission(assignment);
 
     if (status === 'not_submitted') {
@@ -133,8 +120,8 @@ const StudentAssignmentsPage: React.FC = () => {
   };
 
   const canSubmit = (assignment: CourseAssignment) => {
-    const status = assignment.submission_status?.toString().toLowerCase() || 'not_submitted';
-    return status === 'not_submitted';
+    const status = assignment.submission_status?.toString().toLowerCase() || '';
+    return status !== 'submitted' && status !== 'late';
   };
 
   const getGradeBadgeColor = (grade?: string) => {
@@ -170,16 +157,9 @@ const StudentAssignmentsPage: React.FC = () => {
   }
 
   const total = assignments.length;
-  const overdue = assignments.filter((assignment) => isOverdueAssignment(assignment)).length;
+  const overdue = assignments.filter((assignment) => assignment.is_past_deadline).length;
   const submitted = assignments.filter((assignment) => assignment.submission_status !== 'not_submitted').length;
   const pendingAssignments = assignments.filter((assignment) => canSubmit(assignment));
-
-  const filteredAssignments = assignments.filter((assignment) => {
-    if (filter === 'pending') return canSubmit(assignment);
-    if (filter === 'submitted') return assignment.submission_status?.toString().toLowerCase() !== 'not_submitted';
-    if (filter === 'overdue') return isOverdueAssignment(assignment);
-    return true;
-  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#020a1b] via-[#061432] to-[#031029] py-8 px-4 sm:px-8">
@@ -218,27 +198,9 @@ const StudentAssignmentsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="mb-8 flex flex-wrap items-center gap-3">
-            {[
-              { key: 'all', label: 'All' },
-              { key: 'pending', label: 'Pending' },
-              { key: 'submitted', label: 'Submitted' },
-              { key: 'overdue', label: 'Overdue' },
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setFilter(tab.key as typeof filter)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${filter === tab.key ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700/80'}`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
           <div className="grid gap-5 xl:grid-cols-2">
             <AnimatePresence>
-              {filteredAssignments.map((assignment, index) => (
+              {assignments.map((assignment, index) => (
                 <motion.div
                   key={assignment.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -390,12 +352,6 @@ const StudentAssignmentsPage: React.FC = () => {
               ))}
             </AnimatePresence>
           </div>
-
-          {filteredAssignments.length === 0 && assignments.length > 0 && (
-            <div className="rounded-[2rem] border border-dashed border-slate-700/80 bg-[#081328]/70 p-12 text-center text-slate-400">
-              No assignments match the selected filter. Try switching to a different category.
-            </div>
-          )}
 
           {assignments.length === 0 && (
             <div className="rounded-[2rem] border border-dashed border-slate-700/80 bg-[#081328]/70 p-12 text-center text-slate-400">

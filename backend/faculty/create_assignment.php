@@ -80,11 +80,33 @@ try {
     $stmt->execute([$assignmentId]);
     $assignment = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // Notify all students enrolled in this course about the new assignment
+    $notificationStmt = $pdo->prepare('INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status) VALUES (?, NULL, 0.00, ?, ?, ?)');
+    $studentsStmt = $pdo->prepare(
+        'SELECT u.id AS student_id FROM enrollments e JOIN users u ON e.student_id = u.id WHERE e.course_id = ?'
+    );
+    $studentsStmt->execute([$courseId]);
+    $students = $studentsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $notificationText = "New assignment published for your course: {$title}. Deadline: {$deadline}.";
+    foreach ($students as $student) {
+        if (!isset($student['student_id'])) {
+            continue;
+        }
+        $notificationStmt->execute([
+            $student['student_id'],
+            'assignment',
+            $notificationText,
+            'unread'
+        ]);
+    }
+
     http_response_code(201);
     echo json_encode([
         'status' => 'success',
         'message' => 'Assignment created successfully',
-        'assignment' => $assignment
+        'assignment' => $assignment,
+        'notified_students' => count($students),
     ]);
 
 } catch (PDOException $e) {

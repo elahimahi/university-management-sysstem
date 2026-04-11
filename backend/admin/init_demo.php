@@ -19,8 +19,8 @@ try {
     if (!$faculty) {
         // Create demo faculty user
         $hashedPassword = password_hash('password123', PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("INSERT INTO users (email, password, first_name, last_name, role, is_email_verified) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute(['faculty_demo@university.edu', $hashedPassword, 'John', 'Doe', 'faculty', 1]);
+        $stmt = $pdo->prepare("INSERT INTO users (email, password, first_name, last_name, role, approval_status, is_email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute(['faculty_demo@university.edu', $hashedPassword, 'John', 'Doe', 'faculty', 'approved', 1]);
         $facultyId = $pdo->lastInsertId();
     } else {
         $facultyId = $faculty['id'];
@@ -34,8 +34,8 @@ try {
     if (!$student) {
         // Create demo student user
         $hashedPassword = password_hash('password123', PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("INSERT INTO users (email, password, first_name, last_name, role, is_email_verified) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute(['student_demo@university.edu', $hashedPassword, 'Jane', 'Smith', 'student', 1]);
+        $stmt = $pdo->prepare("INSERT INTO users (email, password, first_name, last_name, role, approval_status, is_email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute(['student_demo@university.edu', $hashedPassword, 'Jane', 'Smith', 'student', 'approved', 1]);
         $studentId = $pdo->lastInsertId();
     } else {
         $studentId = $student['id'];

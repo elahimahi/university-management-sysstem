@@ -2,28 +2,50 @@
 require_once __DIR__ . '/../core/db_connect.php';
 require_once __DIR__ . '/../auth/auth_helper.php';
 
-$headers = getallheaders();
-$authHeader = $headers['Authorization'] ?? '';
+// Get Authorization header - try multiple sources
+$authHeader = '';
 
-// Fallback for some server configurations
+// Method 1: getallheaders() (Apache)
+if (function_exists('getallheaders')) {
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? '';
+}
+
+// Method 2: $_SERVER (Fallback for other servers)
 if (!$authHeader && isset($_SERVER['HTTP_AUTHORIZATION'])) {
     $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
-} elseif (!$authHeader && isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+}
+
+// Method 3: Check alternative header names (some servers rewrite)
+if (!$authHeader && isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
     $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
 }
 
-if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+// Debug logging
+error_log('[me.php] Authorization header attempt: "' . substr($authHeader, 0, 50) . '"');
+
+if (!$authHeader) {
     http_response_code(401);
-    echo json_encode(['message' => 'Unauthorized - No token found']);
+    echo json_encode(['message' => 'Unauthorized - No token found', 'debug' => 'No Authorization header detected']);
     exit;
 }
 
-$token = $matches[1];
+// Match Bearer token with flexible whitespace \s+ instead of \s
+if (!preg_match('/Bearer\s+(.+)$/i', trim($authHeader), $matches)) {
+    http_response_code(401);
+    echo json_encode(['message' => 'Unauthorized - Invalid token format', 'debug' => 'Bearer prefix not found']);
+    exit;
+}
+
+$token = trim($matches[1]);
+error_log('[me.php] Token received: ' . substr($token, 0, 30) . '...');
+
 $userId = verifyToken($token);
+error_log('[me.php] Token verification result: userId = ' . ($userId ? $userId : 'false'));
 
 if (!$userId) {
     http_response_code(401);
-    echo json_encode(['message' => 'Invalid or expired token']);
+    echo json_encode(['message' => 'Invalid or expired token', 'debug' => 'Token verification failed']);
     exit;
 }
 
@@ -41,9 +63,10 @@ try {
                 'email' => $user['email'],
                 'firstName' => $user['first_name'],
                 'lastName' => $user['last_name'],
-                'phone' => $user['phone'] ?? null,
+                'phone' => $user['phone'],
                 'role' => $user['role'],
-                'isEmailVerified' => (bool)($user['is_email_verified'] ?? false),
+                'approvalStatus' => $user['approval_status'] ?? 'approved',
+                'isEmailVerified' => (bool)$user['is_email_verified'],
                 'createdAt' => $user['created_at'],
                 'updatedAt' => $user['updated_at']
             ]);

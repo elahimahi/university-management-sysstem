@@ -16,7 +16,6 @@ const StudentProgressSubmit: React.FC<StudentProgressProps> = ({
 }) => {
   const [assignmentTitle, setAssignmentTitle] = useState('');
   const [submissionText, setSubmissionText] = useState('');
-  const [selfRating, setSelfRating] = useState(3);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -33,7 +32,6 @@ const StudentProgressSubmit: React.FC<StudentProgressProps> = ({
           enrollment_id: enrollmentId,
           assignment_title: assignmentTitle,
           submission_text: submissionText,
-          self_rating: selfRating,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -43,7 +41,6 @@ const StudentProgressSubmit: React.FC<StudentProgressProps> = ({
       setMessage({ type: 'success', text: 'Progress submitted successfully!' });
       setAssignmentTitle('');
       setSubmissionText('');
-      setSelfRating(3);
       onSubmitSuccess?.();
     } catch (error: any) {
       setMessage({
@@ -97,31 +94,6 @@ const StudentProgressSubmit: React.FC<StudentProgressProps> = ({
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder:text-gray-400 focus:border-[#FFB347] outline-none transition-all resize-none"
             required
           />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-3">Self-Rating (Rate Your Work)</label>
-          <div className="flex items-center gap-4">
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((rating) => (
-                <button
-                  key={rating}
-                  type="button"
-                  onClick={() => setSelfRating(rating)}
-                  className={`w-10 h-10 rounded-lg font-bold transition-all ${
-                    selfRating === rating
-                      ? 'bg-[#FFB347] text-[#050b18]'
-                      : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
-                  }`}
-                >
-                  {rating}
-                </button>
-              ))}
-            </div>
-            <span className="text-sm text-gray-400">
-              {selfRating <= 2 ? 'Needs Work' : selfRating === 3 ? 'Fair' : selfRating === 4 ? 'Good' : 'Excellent'}
-            </span>
-          </div>
         </div>
 
         <button

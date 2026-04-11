@@ -31,11 +31,12 @@ class SSLCommerzGateway extends PaymentGateway {
         $transactionId = $this->generateTransactionId();
 
         // Store transaction in database
+        $contactInfo = $paymentData['contact_info'] ?? '';
         $insertStmt = $this->pdo->prepare('
-            INSERT INTO payment_transactions (transaction_id, student_id, fee_id, amount, payment_method, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, GETDATE())
+            INSERT INTO payment_transactions (transaction_id, student_id, fee_id, amount, payment_method, status, contact_info, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())
         ');
-        $insertStmt->execute([$transactionId, $studentId, $feeId, $amount, $paymentMethod, 'pending']);
+        $insertStmt->execute([$transactionId, $studentId, $feeId, $amount, $paymentMethod, 'pending', $contactInfo]);
 
         // Prepare SSLCommerz payment data
         $phone = $paymentData['phone'] ?? null;
@@ -76,17 +77,18 @@ class SSLCommerzGateway extends PaymentGateway {
 
         $url = SSLCOMMERZ_API_URL . '/gwprocess/v4/api.php';
 
-        // For development testing with placeholder credentials
-        if (SSLCOMMERZ_STORE_ID === 'your_store_id_here') {
+        // For development testing with mock payment gateway
+        if ((defined('PAYMENT_USE_MOCK_GATEWAY') && PAYMENT_USE_MOCK_GATEWAY) || SSLCOMMERZ_STORE_ID === 'your_store_id_here') {
             $this->logPayment('Using mock payment URL for development', [
                 'transaction_id' => $transactionId,
                 'amount' => $amount,
                 'method' => $paymentMethod
             ]);
+            $contactInfo = $paymentData['contact_info'] ?? '';
             return [
                 'success' => true,
                 'transaction_id' => $transactionId,
-                'payment_url' => 'http://localhost/Database_Project/university-management-sysstem/mock_payment.html?tran_id=' . $transactionId . '&amount=' . $amount . '&method=' . $paymentMethod,
+                'payment_url' => 'http://localhost/SD_Project/university-management-sysstem/mock_payment.html?tran_id=' . $transactionId . '&amount=' . $amount . '&method=' . $paymentMethod . '&contact=' . urlencode($contactInfo),
                 'status' => 'pending'
             ];
         }
@@ -99,7 +101,16 @@ class SSLCommerzGateway extends PaymentGateway {
 
         $response = $this->makeRequest($url, 'POST', $postData, [], false);
 
-        if ($response['http_code'] === 200 && isset($response['response']['GatewayPageURL'])) {
+        // Log complete response for debugging
+        $this->logPayment('SSLCommerz API Response', [
+            'http_code' => $response['http_code'],
+            'raw_response' => $response['raw_response'],
+            'decoded_response' => $response['response'],
+            'gatewayPageURL_exists' => isset($response['response']['GatewayPageURL']),
+            'gatewayPageURL_value' => $response['response']['GatewayPageURL'] ?? 'NOT_SET'
+        ]);
+
+        if ($response['http_code'] === 200 && !empty($response['response']['GatewayPageURL'])) {
             return [
                 'success' => true,
                 'transaction_id' => $transactionId,
@@ -113,7 +124,10 @@ class SSLCommerzGateway extends PaymentGateway {
                 $errorMessage = $response['response']['failedreason'];
             } elseif (isset($response['response']['message'])) {
                 $errorMessage = $response['response']['message'];
+            } elseif (isset($response['response']['status'])) {
+                $errorMessage = 'Status: ' . $response['response']['status'];
             }
+            error_log('SSLCommerz Error Details: ' . json_encode($response));
             return [
                 'success' => false,
                 'error' => 'Failed to initiate payment: ' . $errorMessage
@@ -123,21 +137,23 @@ class SSLCommerzGateway extends PaymentGateway {
 
     public function verifyPayment($transactionId) {
         // For development testing with mock transactions
-        if (SSLCOMMERZ_STORE_ID === 'your_store_id_here' && strpos($transactionId, 'TXN_') === 0) {
-            // Mark mock transaction as completed
-            $updateStmt = $this->pdo->prepare('
-                UPDATE payment_transactions
-                SET status = \'completed\', gateway_response = ?, updated_at = GETDATE()
-                WHERE transaction_id = ?
-            ');
-            $updateStmt->execute([json_encode(['status' => 'VALID', 'mock' => true]), $transactionId]);
+        if ((defined('PAYMENT_USE_MOCK_GATEWAY') && PAYMENT_USE_MOCK_GATEWAY) || SSLCOMMERZ_STORE_ID === 'your_store_id_here') {
+            if (strpos($transactionId, 'TXN_') === 0) {
+                // Mark mock transaction as completed
+                $updateStmt = $this->pdo->prepare('                
+                    UPDATE payment_transactions
+                    SET status = \'completed\', gateway_response = ?, updated_at = GETDATE()
+                    WHERE transaction_id = ?
+                ');
+                $updateStmt->execute([json_encode(['status' => 'VALID', 'mock' => true]), $transactionId]);
 
-            return [
-                'success' => true,
-                'transaction_id' => $transactionId,
-                'status' => 'completed',
-                'gateway_response' => ['status' => 'VALID', 'mock' => true]
-            ];
+                return [
+                    'success' => true,
+                    'transaction_id' => $transactionId,
+                    'status' => 'completed',
+                    'gateway_response' => ['status' => 'VALID', 'mock' => true]
+                ];
+            }
         }
 
         // Query SSLCommerz for payment status
@@ -215,6 +231,13 @@ class SSLCommerzGateway extends PaymentGateway {
             return;
         }
 
+        // Prevent duplicate payment records for the same transaction
+        $existingPaymentStmt = $this->pdo->prepare('SELECT id FROM payments WHERE transaction_id = ?');
+        $existingPaymentStmt->execute([$transactionId]);
+        if ($existingPaymentStmt->fetch()) {
+            return;
+        }
+
         // Record the payment
         $paymentStmt = $this->pdo->prepare('
             INSERT INTO payments (fee_id, amount_paid, payment_date, payment_method, transaction_id)
@@ -227,8 +250,19 @@ class SSLCommerzGateway extends PaymentGateway {
             $transactionId
         ]);
 
-        // Update fee status if needed (similar to existing process.php logic)
-        // ... (you can copy the logic from process.php)
+        // Update fee status if needed
+        $totalPaidStmt = $this->pdo->prepare('SELECT SUM(amount_paid) as total FROM payments WHERE fee_id = ?');
+        $totalPaidStmt->execute([$transaction['fee_id']]);
+        $totalPaid = (float) $totalPaidStmt->fetch()['total'];
+
+        $feeStmt = $this->pdo->prepare('SELECT amount FROM fees WHERE id = ?');
+        $feeStmt->execute([$transaction['fee_id']]);
+        $fee = $feeStmt->fetch();
+
+        if ($fee && $totalPaid >= (float) $fee['amount']) {
+            $updateStmt = $this->pdo->prepare('UPDATE fees SET status = ? WHERE id = ?');
+            $updateStmt->execute(['paid', $transaction['fee_id']]);
+        }
     }
 }
 ?>

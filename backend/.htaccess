@@ -1,10 +1,20 @@
 RewriteEngine On
 
+# CRITICAL: Preserve Authorization header through rewrite
+RewriteCond %{HTTP:Authorization} ^(.*)$ [NC]
+RewriteRule ^(.*)$ - [E=HTTP_AUTHORIZATION:%1]
+
 # Allow direct access to PHP files and actual directories - no rewrite needed
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^(.*)$ - [L]
 
+# CRITICAL: If auth file without .php extension, try to find the .php file
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^auth/(.*)$ auth/$1.php [QSA,L]
+
 # Everything else (routes without .php extension) goes through index.php
 # This allows clean REST API URLs like /faculty/stats instead of /faculty/stats.php
-RewriteRule ^(.*)$ /Database_Project/university-management-sysstem/backend/index.php [QSA,L]
+RewriteRule ^(.*)$ /SD_Project/university-management-sysstem/backend/index.php [QSA,L]

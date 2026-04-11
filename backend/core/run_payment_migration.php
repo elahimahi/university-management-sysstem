@@ -66,6 +66,47 @@ try {
 
     $pdo->exec($sql3);
 
+    // Ensure payments.transaction_id is unique
+    $sql4 = "
+    IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID('payments') AND name = 'UQ_Payments_TransactionId')
+    BEGIN
+        CREATE UNIQUE INDEX UQ_Payments_TransactionId ON payments(transaction_id) WHERE transaction_id IS NOT NULL;
+        PRINT 'Created unique index on payments.transaction_id'
+    END
+    ELSE
+    BEGIN
+        PRINT 'Unique index on payments.transaction_id already exists'
+    END
+    ";
+    $pdo->exec($sql4);
+
+    // Ensure admin_notifications.transaction_id column exists and is unique
+    $sql5 = "
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('admin_notifications') AND name = 'transaction_id')
+    BEGIN
+        ALTER TABLE admin_notifications ADD transaction_id VARCHAR(100) NULL;
+        PRINT 'Added transaction_id column to admin_notifications table'
+    END
+    ELSE
+    BEGIN
+        PRINT 'transaction_id column already exists in admin_notifications table'
+    END
+    ";
+    $pdo->exec($sql5);
+
+    $sql6 = "
+    IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID('admin_notifications') AND name = 'UQ_AdminNotifications_TransactionId')
+    BEGIN
+        CREATE UNIQUE INDEX UQ_AdminNotifications_TransactionId ON admin_notifications(transaction_id) WHERE transaction_id IS NOT NULL;
+        PRINT 'Created unique index on admin_notifications.transaction_id'
+    END
+    ELSE
+    BEGIN
+        PRINT 'Unique index on admin_notifications.transaction_id already exists'
+    END
+    ";
+    $pdo->exec($sql6);
+
     echo "Migration completed successfully!\n";
 
 } catch (Exception $e) {

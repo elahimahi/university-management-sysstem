@@ -65,7 +65,7 @@ export interface AuthState {
 
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<{ user: User; tokens: AuthTokens }>;
-  register: (data: RegisterData) => Promise<{ user: User; tokens: AuthTokens }>;
+  register: (data: RegisterData) => Promise<{ user: User; tokens: AuthTokens | null; message?: string }>;
   logout: () => void;
   refreshToken: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;

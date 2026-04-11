@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAccessToken } from '../../utils/auth.utils';
-import { Mail, BookOpen, Users, Loader } from 'lucide-react';
+import {
+  Mail,
+  BookOpen,
+  Users,
+  Loader,
+  UserCheck,
+  Award,
+  Zap,
+  ArrowRight,
+  Search,
+  Filter,
+  GraduationCap,
+} from 'lucide-react';
 
 interface Student {
   student_id: string;
@@ -22,8 +34,10 @@ const FacultyStudentsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [groupedByStudent, setGroupedByStudent] = useState<Record<string, any>>({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCourse, setFilterCourse] = useState('');
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/SD_Project/university-management-sysstem/backend';
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -75,148 +89,324 @@ const FacultyStudentsPage: React.FC = () => {
     }
   }, [user]);
 
-  const sortedStudents = Object.values(groupedByStudent).sort((a: any, b: any) => 
-    a.last_name.localeCompare(b.last_name)
-  );
+  const sortedStudents = Object.values(groupedByStudent)
+    .sort((a: any, b: any) => a.last_name.localeCompare(b.last_name))
+    .filter((student: any) => {
+      const matchesSearch = 
+        student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.email.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesFilter = !filterCourse || 
+        student.courses.some((c: any) => c.course_code.includes(filterCourse));
+      
+      return matchesSearch && matchesFilter;
+    });
+
+  const allCourses = Array.from(
+    new Set(
+      Object.values(groupedByStudent).flatMap((s: any) =>
+        s.courses.map((c: any) => c.course_code)
+      )
+    )
+  ).sort();
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 },
+    },
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen bg-white dark:bg-navy-900 p-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
+      className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 p-4 md:p-8"
     >
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-white">Students</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            View all students enrolled in your courses.
-          </p>
-        </div>
+      {/* Animated background blobs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ y: [0, -40, 0], x: [0, 30, 0] }}
+          transition={{ duration: 15, repeat: Infinity }}
+          className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 blur-3xl"
+        />
+        <motion.div
+          animate={{ y: [0, 40, 0], x: [0, -30, 0] }}
+          transition={{ duration: 18, repeat: Infinity }}
+          className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-gradient-to-tr from-purple-500/20 to-pink-500/20 blur-3xl"
+        />
+      </div>
 
-        {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl p-6 text-white shadow-lg"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gold-100 text-sm font-semibold">Total Students</p>
-                <h3 className="text-3xl font-bold mt-1">{sortedStudents.length}</h3>
-              </div>
-              <Users size={40} className="opacity-20" />
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Hero Header */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="mb-12"
+        >
+          <motion.div variants={itemVariants} className="flex items-center gap-4 mb-6">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+            >
+              <GraduationCap className="w-12 h-12 text-cyan-400" />
+            </motion.div>
+            <div>
+              <p className="text-cyan-300 font-semibold text-sm uppercase tracking-widest">Faculty Dashboard</p>
+              <h1 className="text-5xl md:text-6xl font-black text-white mt-2">My Students</h1>
             </div>
           </motion.div>
+          <motion.p variants={itemVariants} className="text-cyan-200/80 text-lg max-w-3xl">
+            Manage and view all students enrolled in your courses. Track progress, view enrollments, and maintain communication.
+          </motion.p>
+        </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm font-semibold">Unique Enrollments</p>
-                <h3 className="text-3xl font-bold mt-1">{students.length}</h3>
+        {/* Stats Cards */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12"
+        >
+          {[
+            { icon: Users, label: 'Total Students', value: sortedStudents.length, color: 'from-blue-500 to-blue-600' },
+            { icon: BookOpen, label: 'Enrollments', value: students.length, color: 'from-purple-500 to-purple-600' },
+            { icon: Award, label: 'Status', value: 'Active', color: 'from-emerald-500 to-emerald-600' },
+          ].map((stat, idx) => (
+            <motion.div
+              key={idx}
+              variants={itemVariants}
+              whileHover={{ translateY: -8, scale: 1.02 }}
+              className="group relative"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-300`} />
+              <div className="relative bg-slate-900/80 backdrop-blur border border-slate-700 rounded-2xl p-6 flex items-center gap-4">
+                <div className={`bg-gradient-to-br ${stat.color} p-4 rounded-xl`}>
+                  <stat.icon className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-white text-3xl font-bold">{stat.value}</p>
+                </div>
               </div>
-              <BookOpen size={40} className="opacity-20" />
-            </div>
-          </motion.div>
+            </motion.div>
+          ))}
+        </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-emerald-100 text-sm font-semibold">Status</p>
-                <h3 className="text-3xl font-bold mt-1">Active</h3>
+        {/* Search and Filter */}
+        <motion.div
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+          className="mb-10 space-y-4"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Search Bar */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/50 to-blue-500/50 rounded-2xl blur opacity-0 group-hover:opacity-50 transition duration-300" />
+              <div className="relative flex items-center gap-3 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-2xl px-6 py-4 focus-within:border-cyan-500 transition">
+                <Search className="w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="🔍 Search by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-transparent text-white placeholder-slate-500 outline-none"
+                />
               </div>
-              <div className="w-10 h-10 bg-emerald-400 rounded-full opacity-20" />
             </div>
-          </motion.div>
-        </div>
+
+            {/* Filter by Course */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/50 to-pink-500/50 rounded-2xl blur opacity-0 group-hover:opacity-50 transition duration-300" />
+              <div className="relative flex items-center gap-3 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-2xl px-6 py-4 focus-within:border-purple-500 transition">
+                <Filter className="w-5 h-5 text-slate-400" />
+                <select
+                  value={filterCourse}
+                  onChange={(e) => setFilterCourse(e.target.value)}
+                  className="w-full bg-transparent text-white placeholder-slate-500 outline-none cursor-pointer"
+                >
+                  <option value="">All Courses</option>
+                  {allCourses.map((course) => (
+                    <option key={course} value={course}>
+                      {course}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Loading State */}
         {loading && (
-          <div className="flex items-center justify-center py-12">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center justify-center py-20"
+          >
             <div className="text-center">
-              <Loader size={40} className="animate-spin text-gold-500 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-300">Loading students...</p>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                className="mb-6"
+              >
+                <Users className="w-16 h-16 text-cyan-400 mx-auto" />
+              </motion.div>
+              <motion.div
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-white text-2xl font-bold"
+              >
+                Loading students...
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 mb-8">
-            <p className="text-red-800 dark:text-red-300 font-semibold">Error loading students</p>
-            <p className="text-red-700 dark:text-red-400 text-sm mt-1">{error}</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative group mb-8"
+          >
+            <div className="absolute -inset-1 bg-gradient-to-r from-red-500/50 to-pink-500/50 rounded-3xl blur opacity-75" />
+            <div className="relative bg-slate-900/90 backdrop-blur border border-red-700 rounded-3xl p-8 shadow-2xl">
+              <h3 className="text-xl font-bold text-red-400 mb-2">Error loading students</h3>
+              <p className="text-red-300">{error}</p>
+            </div>
+          </motion.div>
         )}
 
         {/* Students List */}
         {!loading && !error && sortedStudents.length > 0 && (
-          <div className="space-y-4">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-5"
+          >
             {sortedStudents.map((student: any, index: number) => (
               <motion.div
                 key={student.student_id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="rounded-xl shadow-md bg-gradient-to-br from-gold-50 to-white dark:from-navy-800 dark:to-navy-900 p-6 border border-gold-100 dark:border-navy-700 hover:border-gold-300 dark:hover:border-gold-500 transition-all hover:shadow-lg"
+                variants={itemVariants}
+                whileHover={{ y: -4, x: 8 }}
+                className="group relative"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {student.first_name} {student.last_name}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1 text-gray-600 dark:text-gray-400">
-                      <Mail size={16} />
-                      <span className="text-sm">{student.email}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="inline-block bg-gold-100 dark:bg-gold-900/30 text-gold-800 dark:text-gold-300 px-3 py-1 rounded-full text-xs font-semibold">
-                      {student.courses.length} Course{student.courses.length !== 1 ? 's' : ''}
-                    </div>
-                  </div>
-                </div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-3xl opacity-0 group-hover:opacity-100 blur transition duration-300" />
 
-                {/* Courses */}
-                <div className="mt-4 pt-4 border-t border-gold-200 dark:border-navy-700">
-                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-3">Enrolled Courses:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {student.courses.map((course: any) => (
-                      <div
-                        key={course.enrollment_id}
-                        className="bg-white dark:bg-navy-700 border border-gold-200 dark:border-navy-600 rounded-lg px-3 py-2 text-sm"
-                      >
-                        <p className="font-semibold text-gray-900 dark:text-white">{course.course_code}</p>
-                        <p className="text-gray-600 dark:text-gray-400 text-xs">{course.course_name}</p>
+                <div className="relative bg-slate-900/60 backdrop-blur border border-slate-700 rounded-3xl p-6 md:p-8 hover:border-cyan-500/50 transition">
+                  {/* Top animated bar */}
+                  <motion.div
+                    className="absolute top-0 left-0 h-1 bg-gradient-to-r from-cyan-500 to-blue-500"
+                    initial={{ width: 0 }}
+                    whileHover={{ width: '100%' }}
+                    transition={{ duration: 0.3 }}
+                  />
+
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                    {/* Student Info */}
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-lg">
+                          {student.first_name.charAt(0)}{student.last_name.charAt(0)}
+                        </span>
                       </div>
-                    ))}
+                      <div>
+                        <h3 className="text-xl font-bold text-white group-hover:text-cyan-300 transition">
+                          {student.first_name} {student.last_name}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1 text-slate-400">
+                          <Mail className="w-4 h-4" />
+                          <span className="text-sm">{student.email}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Enrollment Badge */}
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      className="inline-block bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 text-cyan-300 px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2"
+                    >
+                      <UserCheck className="w-4 h-4" />
+                      {student.courses.length} Course{student.courses.length !== 1 ? 's' : ''}
+                    </motion.div>
                   </div>
+
+                  {/* Courses Section */}
+                  <div className="pt-6 border-t border-slate-700">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Enrolled Courses</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {student.courses.map((course: any, idx: number) => (
+                        <motion.div
+                          key={course.enrollment_id}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: idx * 0.05 }}
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          className="group/course relative"
+                        >
+                          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 rounded-xl opacity-0 group-hover/course:opacity-100 blur transition" />
+                          <div className="relative bg-slate-800/50 border border-slate-700 hover:border-emerald-500/50 rounded-xl px-4 py-3 transition">
+                            <p className="font-bold text-emerald-300 text-sm">{course.course_code}</p>
+                            <p className="text-slate-400 text-xs mt-1 line-clamp-1">{course.course_name}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="mt-6 w-full md:w-auto px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    View Details
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                  </motion.button>
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {/* Empty State */}
         {!loading && !error && sortedStudents.length === 0 && (
-          <div className="rounded-xl shadow-lg bg-gradient-to-br from-gold-50 to-white dark:from-navy-800 dark:to-navy-900 p-12 border border-gold-100 dark:border-navy-700 text-center">
-            <Users size={48} className="mx-auto text-gold-300 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Students Yet</h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              You don't have any students enrolled in your courses yet.
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-24 bg-slate-900/40 backdrop-blur border border-slate-700/50 rounded-3xl"
+          >
+            <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity }}>
+              <Users className="w-24 h-24 text-slate-500 mx-auto mb-4" />
+            </motion.div>
+            <p className="text-2xl font-bold text-white mb-2">
+              {searchTerm || filterCourse ? '✨ No students found' : '📚 No Students Yet'}
             </p>
-          </div>
+            <p className="text-slate-300">
+              {searchTerm || filterCourse
+                ? 'Try adjusting your search or filter criteria'
+                : 'Students will appear here once they enroll in your courses'}
+            </p>
+          </motion.div>
         )}
       </div>
     </motion.div>

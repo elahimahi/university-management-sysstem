@@ -66,7 +66,7 @@ $student_id = $user['id'];
 
 try {
     // Check if course exists
-    $stmt = $pdo->prepare("SELECT id, name FROM courses WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, code, name FROM courses WHERE id = ?");
     $stmt->execute([$course_id]);
     $course = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -75,6 +75,35 @@ try {
         echo json_encode(['status' => 'error', 'message' => 'Course not found']);
         exit();
     }
+
+    // Check if enrollment is within allowed period
+    // Get user's academic year first
+    $userStmt = $pdo->prepare("SELECT academic_year FROM users WHERE id = ?");
+    $userStmt->execute([$student_id]);
+    $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
+    $academic_year = $userRow['academic_year'] ?? date('Y');
+    
+    // Check if an enrollment period exists for this semester/year combination
+    $periodStmt = $pdo->prepare("
+        SELECT id, start_date, end_date FROM enrollment_periods 
+        WHERE semester = ? AND academic_year = ?
+    ");
+    $periodStmt->execute([$semester, $academic_year]);
+    $period = $periodStmt->fetch(PDO::FETCH_ASSOC);
+    
+    // If a period exists, verify current date is within range
+    if ($period) {
+        $currentDate = new DateTime();
+        $startDate = new DateTime($period['start_date']);
+        $endDate = new DateTime($period['end_date']);
+        
+        if ($currentDate < $startDate || $currentDate > $endDate) {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'message' => 'Enrollment is not allowed at this time for this semester']);
+            exit();
+        }
+    }
+    // If no period is defined, enrollment is always allowed
 
     // Check if student is already enrolled in this course for this semester
     $stmt = $pdo->prepare("SELECT id FROM enrollments WHERE student_id = ? AND course_id = ? AND semester = ?");
@@ -90,6 +119,21 @@ try {
     $stmt->execute([$student_id, $course_id, $semester]);
 
     $enrollment_id = $pdo->lastInsertId();
+
+    // Notify student about the successful course enrollment.
+    // If notification creation fails, keep the enrollment success.
+    $notificationText = "You have successfully enrolled in course {$course['name']} ({$course['code']}) for semester {$semester}.";
+    try {
+        $notificationStmt = $pdo->prepare('INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status) VALUES (?, NULL, 0.00, ?, ?, ?)');
+        $notificationStmt->execute([
+            $student_id,
+            'enrollment',
+            $notificationText,
+            'unread'
+        ]);
+    } catch (PDOException $notificationError) {
+        error_log('Enrollment notification failed: ' . $notificationError->getMessage());
+    }
 
     // Get the enrollment details
     $stmt = $pdo->prepare("

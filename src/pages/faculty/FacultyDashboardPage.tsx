@@ -9,56 +9,43 @@ import {
   AlertCircle,
   CheckCircle,
   TrendingUp,
-  Award,
-  Calendar,
-  Clock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_BASE_URL } from '../../constants/app.constants';
-import PageTransition from '../../components/ui/PageTransition';
-import StatsCard from '../../components/ui/StatsCard';
-import { useNotifications } from '../../hooks/useNotifications';
-import NotificationContainer from '../../components/ui/NotificationContainer';
 
 interface FacultyStats {
   totalCourses: number;
   totalStudents: number;
   pendingGrades: number;
   totalGradesSubmitted: number;
+  attendanceRate: number;
+  attendanceBreakdown?: {
+    presentPercent: number;
+    latePercent: number;
+    absentPercent: number;
+    total: number;
+  };
 }
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-  },
-};
 
 const FacultyDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { notifications, remove, success, error: showError } = useNotifications();
   const [stats, setStats] = useState<FacultyStats>({
     totalCourses: 0,
     totalStudents: 0,
     pendingGrades: 0,
     totalGradesSubmitted: 0,
+    attendanceRate: 0,
+    attendanceBreakdown: {
+      presentPercent: 0,
+      latePercent: 0,
+      absentPercent: 0,
+      total: 0,
+    },
   });
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -78,310 +65,245 @@ const FacultyDashboardPage: React.FC = () => {
           totalStudents: 0,
           pendingGrades: 0,
           totalGradesSubmitted: 0,
+          attendanceRate: 0,
+          attendanceBreakdown: {
+            presentPercent: 0,
+            latePercent: 0,
+            absentPercent: 0,
+            total: 0,
+          },
         });
-        setErrorMsg(null);
+        setError(null);
       } else {
-        setErrorMsg(data.message || 'Failed to fetch stats');
-        showError('Failed to load dashboard', { message: data.message });
+        setError(data.message || 'Failed to fetch stats');
       }
     } catch (err) {
       console.error('Error fetching faculty stats:', err);
-      setErrorMsg('Network error');
-      showError('Connection error', { message: 'Failed to connect to server' });
+      setError('Network error');
     } finally {
       setLoading(false);
     }
   };
 
-  const quickActions = [
-    {
-      icon: BookOpen,
-      label: 'My Courses',
-      value: stats.totalCourses,
-      color: 'primary',
-      path: '/faculty/my-courses',
-      description: 'Manage your courses',
-    },
-    {
-      icon: Users,
-      label: 'My Students',
-      value: stats.totalStudents,
-      color: 'success',
-      path: '/faculty/my-students',
-      description: 'View enrolled students',
-    },
-    {
-      icon: ClipboardList,
-      label: 'Pending Grades',
-      value: stats.pendingGrades,
-      color: 'warning',
-      path: '/faculty/grades',
-      description: 'Submit pending grades',
-    },
-    {
-      icon: BarChart3,
-      label: 'Grades Submitted',
-      value: stats.totalGradesSubmitted,
-      color: 'gold',
-      path: '/faculty/grades',
-      description: 'View submission history',
-    },
-  ];
+  const StatCard = ({
+    icon: Icon,
+    label,
+    value,
+    color,
+    onClick,
+    suffix = '',
+  }: {
+    icon: React.ComponentType<any>;
+    label: string;
+    value: number;
+    color: string;
+    onClick: () => void;
+    suffix?: string;
+  }) => (
+    <button
+      onClick={onClick}
+      className={`p-6 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-105 cursor-pointer ${color}`}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium opacity-75">{label}</p>
+          <p className="text-3xl font-bold mt-2">{value}{suffix}</p>
+        </div>
+        <Icon size={40} className="opacity-30" />
+      </div>
+    </button>
+  );
 
   return (
-    <PageTransition variant="fade">
-      <NotificationContainer
-        notifications={notifications}
-        onClose={remove}
-        position="top-right"
-        maxNotifications={5}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">
+            👨‍🏫 Faculty Dashboard
+          </h1>
+          <p className="text-blue-200">
+            Welcome, {user?.firstName}! Manage your courses and students here.
+          </p>
+        </div>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-navy-900 to-slate-950 p-4 md:p-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header Section */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <motion.h1
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  className="text-4xl md:text-5xl font-bold text-white mb-2"
-                >
-                  👨‍🏫 Faculty Portal
-                </motion.h1>
-                <motion.p
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="text-lg text-blue-200"
-                >
-                  Welcome, <span className="font-semibold">{user?.firstName}</span>! Manage your courses and students
-                </motion.p>
-              </div>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="hidden md:flex items-center gap-3 bg-gradient-to-r from-blue-500/20 to-purple-500/20 px-6 py-4 rounded-lg border border-blue-400/30"
-              >
-                <Clock className="text-blue-300" size={20} />
-                <div className="text-right">
-                  <p className="text-sm text-blue-300 opacity-75">Current Time</p>
-                  <p className="text-lg font-bold text-white">
-                    {new Date().toLocaleTimeString()}
-                  </p>
-                </div>
-              </motion.div>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-900/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg flex items-center gap-2">
+            <AlertCircle size={20} />
+            {error}
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin">
+              <BookOpen className="text-blue-400" size={40} />
             </div>
-          </motion.div>
+            <p className="text-gray-300 mt-4">Loading dashboard...</p>
+          </div>
+        ) : (
+          <>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+              <StatCard
+                icon={BookOpen}
+                label="My Courses"
+                value={stats.totalCourses}
+                color="bg-blue-900/30 border border-blue-500/30 text-blue-100"
+                onClick={() => navigate('/faculty/my-courses')}
+              />
+              <StatCard
+                icon={Users}
+                label="My Students"
+                value={stats.totalStudents}
+                color="bg-purple-900/30 border border-purple-500/30 text-purple-100"
+                onClick={() => navigate('/faculty/my-students')}
+              />
 
-          {/* Error Message */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: errorMsg ? 1 : 0, y: errorMsg ? 0 : 10 }}
-            transition={{ duration: 0.3 }}
-            className="mb-6"
-          >
-            {errorMsg && (
-              <div className="bg-error-500/20 border border-error-500/50 text-error-200 px-4 py-3 rounded-lg flex items-center gap-2 backdrop-blur-sm">
-                <AlertCircle size={20} />
-                {errorMsg}
-              </div>
-            )}
-          </motion.div>
-
-          {/* Loading State */}
-          {loading ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-20"
-            >
+              <StatCard
+                icon={ClipboardList}
+                label="Pending Grades"
+                value={stats.pendingGrades}
+                color="bg-orange-900/30 border border-orange-500/30 text-orange-100"
+                onClick={() => navigate('/faculty/grades')}
+              />
               <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => navigate('/faculty/attendance')}
+                className="bg-cyan-900/30 border border-cyan-500/30 text-cyan-100 rounded-lg p-6 cursor-pointer hover:bg-cyan-900/50 transition-all"
               >
-                <BookOpen className="text-blue-400" size={50} />
-              </motion.div>
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-gray-300 mt-4 text-lg"
-              >
-                Loading your dashboard...
-              </motion.p>
-            </motion.div>
-          ) : (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-8"
-            >
-              {/* Stats Cards Grid */}
-              <motion.div 
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                transition={{ staggerChildren: 0.1, delayChildren: 0.2 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-              >
-                {quickActions.map((action, idx) => {
-                  const Icon = action.icon;
-                  return (
-                    <motion.div
-                      key={idx}
-                      variants={itemVariants}
-                      transition={{ duration: 0.5 }}
-                      whileHover={{ y: -5 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => navigate(action.path)}
-                      className="cursor-pointer"
-                    >
-                      <StatsCard
-                        icon={<Icon className="w-6 h-6" />}
-                        title={action.label}
-                        value={action.value}
-                        description={action.description}
-                        color={action.color as any}
-                        size="md"
-                      />
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-
-              <motion.div 
-                variants={itemVariants}
-                transition={{ duration: 0.5 }}
-                className="grid grid-cols-1 lg:grid-cols-3 gap-6"
-              >
-                {/* Quick Actions */}
-                <div className="lg:col-span-2 bg-gradient-to-br from-blue-900/30 to-purple-900/20 border border-blue-500/30 rounded-lg p-6 backdrop-blur-sm">
-                  <motion.h2
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-2xl font-bold text-white mb-6 flex items-center gap-2"
-                  >
-                    <PlusCircle size={24} className="text-blue-400" />
-                    Quick Actions
-                  </motion.h2>
-                  <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid grid-cols-1 md:grid-cols-2 gap-3"
-                  >
-                    {[
-                      { label: 'My Courses', icon: BookOpen, path: '/faculty/my-courses' },
-                      { label: 'Mark Attendance', icon: Calendar, path: '/faculty/attendance' },
-                      { label: 'Submit Grades', icon: CheckCircle, path: '/faculty/submit-grades' },
-                      { label: 'View Reports', icon: BarChart3, path: '/faculty/reports' },
-                      { label: 'My Students', icon: Users, path: '/faculty/my-students' },
-                      { label: 'Assignments', icon: ClipboardList, path: '/faculty/assignments' },
-                    ].map((action, idx) => {
-                      const ActionIcon = action.icon;
-                      return (
-                        <motion.button
-                          key={idx}
-                          variants={itemVariants}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => navigate(action.path)}
-                          className="flex items-center gap-2 bg-gradient-to-r from-blue-600/60 to-blue-500/40 hover:from-blue-500/80 hover:to-blue-400/60 text-white font-semibold py-3 px-4 rounded-lg transition-all"
-                        >
-                          <ActionIcon size={18} />
-                          {action.label}
-                        </motion.button>
-                      );
-                    })}
-                  </motion.div>
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-cyan-300">Attendance Rate</h3>
+                  <TrendingUp className="w-5 h-5 text-cyan-400" />
                 </div>
-
-                {/* Faculty Info Card */}
-                <motion.div
-                  variants={itemVariants}
-                  transition={{ duration: 0.5 }}
-                  className="bg-gradient-to-br from-purple-900/30 to-pink-900/20 border border-purple-500/30 rounded-lg p-6 backdrop-blur-sm"
-                >
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <Award size={20} className="text-purple-400" />
-                    Faculty Info
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-gray-300 opacity-75">Name</p>
-                      <p className="text-lg font-semibold text-white">
-                        {user?.firstName} {user?.lastName}
-                      </p>
+                <div className="mb-4">
+                  <div className="text-3xl font-bold text-cyan-200">{Math.round(stats.attendanceRate)}%</div>
+                  <p className="text-xs text-cyan-300 mt-1">Overall attendance score</p>
+                </div>
+                {stats.attendanceBreakdown && stats.attendanceBreakdown.total > 0 && (
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="bg-green-900/40 border border-green-500/40 rounded p-2">
+                      <div className="font-bold text-green-400">{stats.attendanceBreakdown.presentPercent}%</div>
+                      <div className="text-green-300 text-xs">Present</div>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-300 opacity-75">Email</p>
-                      <p className="text-sm text-blue-300 break-all">{user?.email}</p>
+                    <div className="bg-yellow-900/40 border border-yellow-500/40 rounded p-2">
+                      <div className="font-bold text-yellow-400">{stats.attendanceBreakdown.latePercent}%</div>
+                      <div className="text-yellow-300 text-xs">Late</div>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-300 opacity-75">Role</p>
-                      <motion.span
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-block mt-1 px-3 py-1 bg-purple-500/40 text-purple-200 rounded-full text-sm font-semibold"
-                      >
-                        {user?.role}
-                      </motion.span>
+                    <div className="bg-red-900/40 border border-red-500/40 rounded p-2">
+                      <div className="font-bold text-red-400">{stats.attendanceBreakdown.absentPercent}%</div>
+                      <div className="text-red-300 text-xs">Absent</div>
                     </div>
                   </div>
-                </motion.div>
+                )}
               </motion.div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-gradient-to-r from-blue-900/50 to-slate-900/50 border border-blue-500/30 rounded-lg p-8 mb-8">
+              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <PlusCircle size={24} />
+                Quick Actions
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <button
+                  onClick={() => navigate('/faculty/my-courses')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-105"
+                >
+                  📚 My Courses ({stats.totalCourses})
+                </button>
+                <button
+                  onClick={() => navigate('/faculty/my-students')}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-105"
+                >
+                  👥 My Students ({stats.totalStudents})
+                </button>
+                <button
+                  onClick={() => navigate('/faculty/attendance')}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-105"
+                >
+                  📋 Mark Attendance
+                </button>
+                <button
+                  onClick={() => navigate('/faculty/grades')}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-105"
+                >
+                  ⭐ View Grades
+                </button>
+                <button
+                  onClick={() => navigate('/faculty/assignments')}
+                  className="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-105"
+                >
+                  📝 Manage Assignments
+                </button>
+                <button
+                  onClick={() => navigate('/faculty/reports')}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-105"
+                >
+                  📊 View Reports
+                </button>
+              </div>
+            </div>
+
+            {/* Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Profile Info */}
+              <div className="bg-slate-800/50 border border-slate-600 rounded-lg p-8">
+                <h3 className="text-xl font-bold text-white mb-4">👤 Profile Information</h3>
+                <div className="space-y-3 text-gray-300">
+                  <div>
+                    <p className="text-sm opacity-75">Name</p>
+                    <p className="text-lg font-semibold text-white">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm opacity-75">Email</p>
+                    <p className="text-lg font-semibold text-white">{user?.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm opacity-75">Role</p>
+                    <p className="text-lg font-semibold text-blue-300 capitalize">
+                      {user?.role}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {/* System Status */}
-              <motion.div
-                variants={itemVariants}
-                transition={{ duration: 0.5 }}
-                className="bg-gradient-to-br from-emerald-900/30 to-teal-900/20 border border-emerald-500/30 rounded-lg p-6 backdrop-blur-sm"
-              >
-                <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                  <CheckCircle size={24} className="text-emerald-400" />
-                  System Status
-                </h3>
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="grid grid-cols-1 md:grid-cols-3 gap-6"
-                >
-                  {[
-                    { name: 'Backend API', status: 'Connected' },
-                    { name: 'Database', status: 'Active' },
-                    { name: 'Authentication', status: 'Verified' },
-                  ].map((item, idx) => (
-                    <motion.div key={idx} variants={itemVariants} transition={{ duration: 0.5 }} className="flex items-center justify-between">
-                      <span className="text-gray-300 font-medium">{item.name}</span>
-                      <div className="flex items-center gap-2">
-                        <motion.div
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                          className="w-3 h-3 rounded-full bg-emerald-500"
-                        />
-                        <span className="text-sm font-semibold text-emerald-300">{item.status}</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-        </div>
+              <div className="bg-slate-800/50 border border-slate-600 rounded-lg p-8">
+                <h3 className="text-xl font-bold text-white mb-4">✅ System Status</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-gray-300">
+                    <span className="text-sm opacity-75">Backend API</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="text-sm font-semibold">Connected</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-gray-300">
+                    <span className="text-sm opacity-75">Database</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="text-sm font-semibold">Active</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-gray-300">
+                    <span className="text-sm opacity-75">Authentication</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="text-sm font-semibold">Verified</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
-    </PageTransition>
+    </div>
   );
 };
 

@@ -19,6 +19,17 @@ require_once __DIR__ . '/../core/db_connect.php';
 require_once __DIR__ . '/../core/sms_service.php';
 header('Content-Type: application/json');
 
+function adminNotificationExists($pdo, $student_id, $fee_id, $payment_method, $fee_description) {
+    $stmt = $pdo->prepare('SELECT 1 FROM admin_notifications WHERE student_id = ? AND fee_id = ? AND payment_method = ? AND fee_description = ?');
+    $stmt->execute([$student_id, $fee_id, $payment_method, $fee_description]);
+    return (bool) $stmt->fetch();
+}
+
+function insertAdminNotification($pdo, $student_id, $fee_id, $amount, $payment_method, $fee_description, $transaction_id = null) {
+    $stmt = $pdo->prepare('INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status, transaction_id) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    $stmt->execute([$student_id, $fee_id, $amount, $payment_method, $fee_description, 'unread', $transaction_id]);
+}
+
 try {
     $start_time = microtime(true);
     $executed_tasks = [];
@@ -204,21 +215,74 @@ try {
         $errors[] = "Penalty application task failed: {$e->getMessage()}";
     }
 
-    // Task 3: Update fee status to "overdue" for past deadline fees
+    // Task 3: Mark overdue fees and notify admin about unpaid fees
     try {
-        $update_status = $pdo->prepare('
-            UPDATE fees 
-            SET status = "overdue" 
-            WHERE status = "pending" 
-              AND due_date < CAST(GETDATE() AS DATE)
-              AND payment_deadline IS NULL
-        ');
-        $update_status->execute();
-        $rows_updated = $update_status->rowCount();
+        $overdueQuery = '
+            SELECT
+                f.id AS fee_id,
+                f.student_id,
+                f.description,
+                f.amount,
+                f.payment_deadline,
+                ISNULL(SUM(p.amount_paid), 0) AS total_paid,
+                u.first_name
+            FROM fees f
+            LEFT JOIN payments p ON p.fee_id = f.id
+            LEFT JOIN users u ON f.student_id = u.id
+            WHERE f.status IN ("pending", "overdue")
+              AND (
+                    (f.payment_deadline IS NOT NULL AND f.payment_deadline < GETDATE())
+                    OR (f.payment_deadline IS NULL AND f.due_date < CAST(GETDATE() AS DATE))
+              )
+            GROUP BY f.id, f.student_id, f.description, f.amount, f.payment_deadline, u.first_name
+        ';
+
+        $stmt = $pdo->prepare($overdueQuery);
+        $stmt->execute();
+        $overdue_fees = $stmt->fetchAll();
+
+        $overdue_notifications = 0;
+        $rows_updated = 0;
+
+        foreach ($overdue_fees as $fee) {
+            $fee_id = $fee['fee_id'];
+            $student_id = $fee['student_id'];
+            $student_name = $fee['first_name'] ?? 'Student';
+            $feeAmount = (float)$fee['amount'];
+            $paidAmount = (float)$fee['total_paid'];
+            $remaining = max(0, $feeAmount - $paidAmount);
+
+            $updateStatus = $pdo->prepare('UPDATE fees SET status = "overdue" WHERE id = ?');
+            $updateStatus->execute([$fee_id]);
+            $rows_updated += $updateStatus->rowCount();
+
+            if ($remaining <= 0) {
+                continue;
+            }
+
+            $deadlineText = '';
+            if (!empty($fee['payment_deadline'])) {
+                try {
+                    $deadline = new DateTime($fee['payment_deadline']);
+                    $deadlineText = ' since ' . $deadline->format('d/m/Y H:i');
+                } catch (Exception $e) {
+                    $deadlineText = ' since ' . $fee['payment_deadline'];
+                }
+            }
+
+            $description = "Payment overdue{$deadlineText}. Remaining amount: ৳" . number_format($remaining, 2);
+
+            if (!adminNotificationExists($pdo, $student_id, $fee_id, 'overdue', $description)) {
+                insertAdminNotification($pdo, $student_id, $fee_id, $remaining, 'overdue', $description);
+                $overdue_notifications++;
+            }
+        }
 
         $executed_tasks[] = [
-            'task' => 'Update status for overdue fees (no payment deadline)',
+            'task' => 'Mark overdue fees and create admin overdue notifications',
             'status' => 'completed',
+            'fees_processed' => count($overdue_fees),
+            'notifications_created' => $overdue_notifications,
             'rows_updated' => $rows_updated
         ];
 

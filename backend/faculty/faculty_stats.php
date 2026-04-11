@@ -1,33 +1,15 @@
 <?php
+require_once __DIR__ . '/../core/cors.php';
 require_once __DIR__ . '/../core/db_connect.php';
 require_once __DIR__ . '/../auth/auth_helper.php';
 
-$headers = getallheaders();
-$authHeader = $headers['Authorization'] ?? '';
-
-if (!$authHeader && isset($_SERVER['HTTP_AUTHORIZATION'])) {
-    $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
-}
-
-if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-    http_response_code(401);
-    echo json_encode(['message' => 'Unauthorized']);
-    exit;
-}
-
-$token = $matches[1];
-$userId = verifyToken($token);
-
-if (!$userId) {
-    http_response_code(401);
-    echo json_encode(['message' => 'Invalid or expired token']);
-    exit;
-}
+$user = requireFacultyAuth();
+$facultyId = $user['id'];
 
 try {
     // 1. Get total courses
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM courses WHERE instructor_id = ?");
-    $stmt->execute([$userId]);
+    $stmt->execute([$facultyId]);
     $totalCourses = $stmt->fetchColumn();
 
     // 2. Get total students (unique students enrolled in courses taught by this instructor)
@@ -37,7 +19,7 @@ try {
         JOIN courses c ON e.course_id = c.id
         WHERE c.instructor_id = ?
     ");
-    $stmt->execute([$userId]);
+    $stmt->execute([$facultyId]);
     $totalStudents = $stmt->fetchColumn();
 
     // 3. Get courses list with student count per course
@@ -48,27 +30,52 @@ try {
         WHERE c.instructor_id = ?
         GROUP BY c.id, c.code, c.name
     ");
-    $stmt->execute([$userId]);
+    $stmt->execute([$facultyId]);
     $courses = $stmt->fetchAll();
 
-    // 4. Calculate Attendance Rate for this faculty's students
-    $attendanceRate = 85; // Default mock value
+    // 4. Calculate Attendance Rate for this faculty's students and breakdown
+    $attendanceRate = 0;
+    $attendanceBreakdown = [
+        'presentPercent' => 0,
+        'latePercent' => 0,
+        'absentPercent' => 0,
+        'total' => 0,
+    ];
+
     try {
         $stmt = $pdo->prepare("
             SELECT 
-                CASE 
-                    WHEN COUNT(*) = 0 THEN 0
-                    ELSE CAST(COUNT(CASE WHEN a.status = 'present' THEN 1 END) * 100.0 / COUNT(*) AS FLOAT)
-                END as rate
+                COUNT(*) as totalRecords,
+                SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) as presentCount,
+                SUM(CASE WHEN a.status = 'late' THEN 1 ELSE 0 END) as lateCount,
+                SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) as absentCount,
+                AVG(CASE 
+                    WHEN a.status = 'present' THEN 1.0
+                    WHEN a.status = 'late' THEN 0.5
+                    WHEN a.status = 'absent' THEN 0.0
+                    ELSE 0.0
+                END) as avgAttendanceRate
             FROM attendance a
-            JOIN enrollments e ON a.student_id = e.student_id AND a.course_id = e.course_id
+            JOIN enrollments e ON a.enrollment_id = e.id
             JOIN courses c ON e.course_id = c.id
-            WHERE c.instructor_id = ?
+            WHERE c.instructor_id = ? AND a.status IS NOT NULL
         ");
-        $stmt->execute([$userId]);
-        $result = $stmt->fetchColumn();
-        if ($result !== null) {
-            $attendanceRate = $result;
+        $stmt->execute([$facultyId]);
+        $attendanceData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($attendanceData) {
+            $attendanceRate = $attendanceData['avgAttendanceRate'] ? floatval($attendanceData['avgAttendanceRate']) * 100 : 0;
+            $totalRecords = intval($attendanceData['totalRecords'] ?? 0);
+            $presentPercent = $totalRecords > 0 ? round((intval($attendanceData['presentCount'] ?? 0) / $totalRecords) * 100, 1) : 0;
+            $latePercent = $totalRecords > 0 ? round((intval($attendanceData['lateCount'] ?? 0) / $totalRecords) * 100, 1) : 0;
+            $absentPercent = $totalRecords > 0 ? round((intval($attendanceData['absentCount'] ?? 0) / $totalRecords) * 100, 1) : 0;
+
+            $attendanceBreakdown = [
+                'presentPercent' => $presentPercent,
+                'latePercent' => $latePercent,
+                'absentPercent' => $absentPercent,
+                'total' => $totalRecords,
+            ];
         }
     } catch (PDOException $e) {
         // Use default if query fails
@@ -76,29 +83,35 @@ try {
 
     // 5. Get recent activity from database
     // Enrollments
-    $stmt = $pdo->prepare("
-        SELECT TOP 2 'enrollment' as type, CONCAT(u.first_name, ' enrolled in ', c.name) as message, e.enrolled_at as time
-        FROM enrollments e
-        JOIN users u ON e.student_id = u.id
-        JOIN courses c ON e.course_id = c.id
-        WHERE c.instructor_id = ?
-        ORDER BY e.enrolled_at DESC
-    ");
-    $stmt->execute([$userId]);
-    $enrolActivity = $stmt->fetchAll();
+    $enrolActivity = [];
+    try {
+        $stmt = $pdo->prepare("
+            SELECT TOP 2 'enrollment' as type, CONCAT(u.first_name, ' enrolled in ', c.name) as message, e.enrolled_at as time
+            FROM enrollments e
+            JOIN users u ON e.student_id = u.id
+            JOIN courses c ON e.course_id = c.id
+            WHERE c.instructor_id = ?
+            ORDER BY e.enrolled_at DESC
+        ");
+        $stmt->execute([$facultyId]);
+        $enrolActivity = $stmt->fetchAll();
+    } catch (PDOException $e) {
+        $enrolActivity = [];
+    }
 
     // Grades
     $gradeActivity = [];
     try {
         $stmt = $pdo->prepare("
-            SELECT TOP 2 'grade' as type, CONCAT(u.first_name, ' graded in ', c.name) as message, g.assigned_at as time
+            SELECT TOP 2 'grade' as type, CONCAT(u.first_name, ' received grade in ', c.name) as message, g.recorded_at as time
             FROM grades g
-            JOIN users u ON g.student_id = u.id
-            JOIN courses c ON g.course_id = c.id
-            WHERE c.id IN (SELECT id FROM courses WHERE instructor_id = ?)
-            ORDER BY g.assigned_at DESC
+            JOIN enrollments e ON g.enrollment_id = e.id
+            JOIN users u ON e.student_id = u.id
+            JOIN courses c ON e.course_id = c.id
+            WHERE c.instructor_id = ?
+            ORDER BY g.recorded_at DESC
         ");
-        $stmt->execute([$userId]);
+        $stmt->execute([$facultyId]);
         $gradeActivity = $stmt->fetchAll();
     } catch (PDOException $e) {
         $gradeActivity = [];
@@ -118,12 +131,49 @@ try {
         else $act['time'] = floor($diff/86400) . ' days ago';
     }
 
+    // Get pending grades based on active enrollments that do not yet have grade records
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) as pendingGrades
+        FROM enrollments e
+        JOIN courses c ON e.course_id = c.id
+        WHERE c.instructor_id = ?
+          AND e.status = 'active'
+          AND NOT EXISTS (
+              SELECT 1 FROM grades g
+              WHERE g.student_id = e.student_id
+                AND g.course_id = e.course_id
+                AND g.semester = e.semester
+          )
+    ");
+    $stmt->execute([$facultyId]);
+    $pendingGradesData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $pendingGradesCount = intval($pendingGradesData['pendingGrades'] ?? 0);
+
+    // Get submitted grades count - count all grades in enrollments for courses taught by this faculty
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) as submittedGrades
+        FROM enrollments e
+        JOIN courses c ON e.course_id = c.id
+        WHERE c.instructor_id = ?
+          AND EXISTS (
+              SELECT 1 FROM grades g
+              WHERE g.student_id = e.student_id
+                AND g.course_id = e.course_id
+                AND g.semester = e.semester
+          )
+    ");
+    $stmt->execute([$facultyId]);
+    $submittedGradesData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $submittedGradesCount = intval($submittedGradesData['submittedGrades'] ?? 0);
+
     echo json_encode([
         'stats' => [
             'totalCourses' => (int)$totalCourses,
             'totalStudents' => (int)$totalStudents,
             'attendanceRate' => round((float)$attendanceRate),
-            'pendingGrades' => rand(5, 15) // Still mocked as 'pending' isn't explicitly tracked yet
+            'pendingGrades' => $pendingGradesCount,
+            'totalGradesSubmitted' => $submittedGradesCount,
+            'attendanceBreakdown' => $attendanceBreakdown,
         ],
         'courses' => $courses,
         'recentActivity' => array_slice($recentActivity, 0, 4)

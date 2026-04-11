@@ -36,6 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // NOW execute logic
 // ============================================
 require_once __DIR__ . '/../core/db_connect.php';
+require_once __DIR__ . '/../auth/auth_helper.php';
+
+$user = requireFacultyAuth();
 
 $data = json_decode(file_get_contents('php://input'), true);
 
@@ -85,13 +88,16 @@ try {
         }
 
         // Verify enrollment exists and belongs to this course
-        $verify_enrollment = $pdo->prepare('SELECT id FROM enrollments WHERE id = ? AND course_id = ?');
+        $verify_enrollment = $pdo->prepare('SELECT id, student_id FROM enrollments WHERE id = ? AND course_id = ?');
         $verify_enrollment->execute([$enrollment_id, $course_id]);
-        if (!$verify_enrollment->fetch()) {
+        $enrollment = $verify_enrollment->fetch(PDO::FETCH_ASSOC);
+        if (!$enrollment) {
             $failed++;
             $errors[] = "Enrollment $enrollment_id not found in this course";
             continue;
         }
+
+        $studentId = (int)$enrollment['student_id'];
 
         try {
             // Try to insert new attendance record
@@ -103,6 +109,14 @@ try {
             
             // Also update or insert the attendance marks in course_marks table
             updateAttendanceMarks($pdo, $enrollment_id, $course_id, $attendance_marks);
+
+            $notificationStmt = $pdo->prepare('INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status) VALUES (?, NULL, 0.00, ?, ?, ?)');
+            $notificationStmt->execute([
+                $studentId,
+                'attendance',
+                "Your attendance status for course #{$course_id} on {$date} was marked as {$status}.",
+                'unread'
+            ]);
             
             $successful++;
         } catch (Exception $e) {
@@ -119,6 +133,14 @@ try {
                     
                     // Update the attendance marks in course_marks table
                     updateAttendanceMarks($pdo, $enrollment_id, $course_id, $attendance_marks);
+
+                    $notificationStmt = $pdo->prepare('INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status) VALUES (?, NULL, 0.00, ?, ?, ?)');
+                    $notificationStmt->execute([
+                        $studentId,
+                        'attendance',
+                        "Your attendance status for course #{$course_id} on {$date} was updated to {$status}.",
+                        'unread'
+                    ]);
                     
                     $successful++;
                 } catch (Exception $update_error) {

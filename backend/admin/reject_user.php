@@ -79,7 +79,17 @@ try {
         WHERE id = ?
     ");
     $updateStmt->execute([$reason, $adminId, $userId]);
-    
+
+    if (in_array($user['role'], ['student', 'faculty'], true)) {
+        $rejectionMessage = sprintf(
+            'Your %s registration has been rejected by SuperAdmin. Reason: %s',
+            $user['role'],
+            $reason
+        );
+        $notifyStmt = $pdo->prepare("INSERT INTO notifications (recipient_id, recipient_role, actor_id, message, notification_type, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $notifyStmt->execute([$userId, $user['role'], $adminId, $rejectionMessage, 'registration', 'unread']);
+    }
+
     http_response_code(200);
     echo json_encode([
         'message' => 'User rejected successfully',
@@ -93,7 +103,7 @@ try {
             'rejection_reason' => $reason
         ]
     ]);
-    
+
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['message' => 'Failed to reject user: ' . $e->getMessage()]);

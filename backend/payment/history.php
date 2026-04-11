@@ -26,6 +26,7 @@ try {
                 p.amount_paid,
                 p.payment_date,
                 p.payment_method,
+                p.phone_or_account,
                 f.description,
                 f.amount as fee_amount
             FROM payments p
@@ -43,6 +44,7 @@ try {
                 p.amount_paid,
                 p.payment_date,
                 p.payment_method,
+                p.phone_or_account,
                 f.description,
                 f.amount as fee_amount,
                 f.status,

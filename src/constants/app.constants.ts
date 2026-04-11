@@ -1,6 +1,6 @@
 ﻿export const APP_NAME = process.env.REACT_APP_NAME || 'University Management System';
 export const APP_VERSION = process.env.REACT_APP_VERSION || '1.0.0';
-export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/SD_Project/university-management-sysstem/backend';
 
 export const ROUTES = {
   HOME: '/',

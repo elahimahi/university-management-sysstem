@@ -21,25 +21,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // ============================================
 require_once __DIR__ . '/../core/db_connect.php';
 
-$data = json_decode(file_get_contents("php://input"), true);
-error_log("CREATE_COURSE: Received data: " . json_encode($data));
+$rawBody = file_get_contents("php://input");
+$data = json_decode($rawBody, true);
+if (!is_array($data)) {
+    $data = $_POST ?: [];
+}
+error_log("CREATE_COURSE: Received raw body: " . $rawBody);
+error_log("CREATE_COURSE: Parsed data: " . json_encode($data));
 
-if (!isset($data['code']) || !isset($data['name'])) {
+$courseCode = strtoupper(preg_replace('/\s+/', ' ', trim($data['code'] ?? $data['course_code'] ?? '')));
+$courseName = trim($data['name'] ?? $data['course_name'] ?? '');
+$credits = isset($data['credits']) ? intval($data['credits']) : 3;
+$category = isset($data['category']) ? trim($data['category']) : 'General';
+$level = isset($data['level']) ? trim($data['level']) : 'Undergraduate';
+$instructorId = (isset($data['instructor_id']) && $data['instructor_id'] !== '' && intval($data['instructor_id']) > 0)
+    ? intval($data['instructor_id'])
+    : null;
+
+if ($courseCode === '' || $courseName === '') {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Course code and name are required']);
     exit;
 }
 
 try {
-    $courseCode = strtoupper(preg_replace('/\s+/', ' ', trim($data['code'])));
-    $courseName = trim($data['name']);
     error_log("CREATE_COURSE: Attempting to create course with code=" . $courseCode . ", name=" . $courseName);
-
-    if ($courseCode === '') {
-        http_response_code(400);
-        echo json_encode(['status' => 'error', 'message' => 'Course code is required']);
-        exit;
-    }
 
     // Prevent duplicate course codes before insert
     $check = $pdo->prepare("SELECT COUNT(*) as count FROM courses WHERE REPLACE(LOWER(LTRIM(RTRIM(code))), ' ', '') = REPLACE(LOWER(LTRIM(RTRIM(?))), ' ', '')");
@@ -51,18 +57,14 @@ try {
         exit;
     }
     
-    $stmt = $pdo->prepare("
-        INSERT INTO courses (code, name, credits, category, level, instructor_id)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ");
-    
+    $stmt = $pdo->prepare("INSERT INTO courses (code, name, credits, category, level, instructor_id) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $courseCode,
         $courseName,
-        $data['credits'] ?? 3,
-        $data['category'] ?? 'General',
-        $data['level'] ?? 'Undergraduate',
-        $data['instructor_id'] ?? null
+        $credits,
+        $category,
+        $level,
+        $instructorId
     ]);
     
     error_log("CREATE_COURSE: Successfully created course");
@@ -76,12 +78,18 @@ try {
 
 } catch (PDOException $e) {
     error_log("CREATE_COURSE: PDO Error - " . $e->getMessage());
+    $message = $e->getMessage();
     if ($e->getCode() == 23000) {
-        http_response_code(409);
-        echo json_encode(['status' => 'error', 'message' => 'Course code already exists']);
+        if (stripos($message, 'foreign key') !== false || stripos($message, 'constraint') !== false) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Invalid instructor_id or database constraint violation']);
+        } else {
+            http_response_code(409);
+            echo json_encode(['status' => 'error', 'message' => 'Course code already exists']);
+        }
     } else {
         http_response_code(500);
-        echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $message]);
     }
 }
 ?>

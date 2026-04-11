@@ -11,6 +11,7 @@ interface Course {
   credits: number;
   category?: string;
   level?: string;
+  semester?: string;
   instructor_id?: number;
   first_name?: string;
   last_name?: string;
@@ -26,33 +27,34 @@ interface EnrolledCourse extends Course {
 const StudentRegistrationPage: React.FC = () => {
   const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
+  const [semesterOptions, setSemesterOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState<number | null>(null);
-  const [semester, setSemester] = useState<string>('Spring 2024');
+  const [semester, setSemester] = useState<string>('');
   const [filter, setFilter] = useState<string>('');
 
   useEffect(() => {
-    fetchCourses();
+    fetchData();
   }, []);
 
-  const fetchCourses = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch available courses
-      const availableResponse = await apiService.get<{ status: string; courses: Course[] }>(
-        '/courses/available'
-      );
-      if (availableResponse.status === 'success') {
-        setAvailableCourses(availableResponse.courses || []);
-      }
 
-      // Fetch enrolled courses
-      const enrolledResponse = await apiService.get<{ status: string; courses: EnrolledCourse[] }>(
+      const enrolledResponse = await apiService.get<{ status: string; courses: EnrolledCourse[]; student?: { current_semester?: string } }>(
         '/student/courses'
       );
+
+      let effectiveSemester = semester;
       if (enrolledResponse.status === 'success') {
         setEnrolledCourses(enrolledResponse.courses || []);
+        if (enrolledResponse.student?.current_semester) {
+          effectiveSemester = enrolledResponse.student.current_semester;
+          setSemester(effectiveSemester);
+        }
       }
+
+      await fetchAvailableCourses(effectiveSemester);
     } catch (error) {
       console.error('Error fetching courses:', error);
       toast.error('Failed to load courses');
@@ -61,37 +63,107 @@ const StudentRegistrationPage: React.FC = () => {
     }
   };
 
-  const handleEnroll = async (courseId: number) => {
+  const fetchAvailableCourses = async (selectedSemester?: string) => {
+    try {
+      const query = selectedSemester ? `?semester=${encodeURIComponent(selectedSemester)}` : '';
+      const availableResponse = await apiService.get<{
+        status: string;
+        courses: Course[];
+        semester_options?: string[];
+      }>(`/courses/available${query}`);
+
+      if (availableResponse.status === 'success') {
+        setAvailableCourses(availableResponse.courses || []);
+      }
+
+      const options = availableResponse.semester_options || [];
+      if (options.length > 0) {
+        setSemesterOptions(options);
+        if (!semester || !options.includes(semester)) {
+          const initialSemester = selectedSemester || options[0];
+          if (initialSemester) {
+            setSemester(initialSemester);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching available courses:', error);
+      toast.error('Failed to load available courses');
+    }
+  };
+
+  const handleSemesterChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = event.target.value;
+    setSemester(selected);
+    await fetchAvailableCourses(selected);
+  };
+
+  const handleEnroll = async (courseId: number | string) => {
     if (!semester.trim()) {
       toast.error('Please select a semester');
       return;
     }
 
+    const courseIdNumber = Number(courseId);
+    if (!courseIdNumber) {
+      toast.error('Invalid course selected');
+      return;
+    }
+
     try {
-      setEnrolling(courseId);
-      const response = await apiService.post<{ status: string; message?: string; enrollment?: any }>(
+      setEnrolling(courseIdNumber);
+      const response = await apiService.post<{ status?: string; message?: string; enrollment?: any }>(
         '/student/enroll',
-        { course_id: courseId, semester }
+        { course_id: courseIdNumber, semester: semester.trim() }
       );
 
-      if (response.status === 'success') {
-        toast.success('Course enrollment successful!');
-        fetchCourses();
+      const responseStatus = typeof response.status === 'string' ? response.status.toLowerCase() : String(response.status || '');
+      const responseMessage = typeof response.message === 'string' ? response.message : '';
+      const successResponse =
+        responseStatus === 'success' ||
+        responseStatus === 'created' ||
+        /success/i.test(responseMessage) ||
+        Boolean(response.enrollment);
+
+      if (successResponse) {
+        toast.success(response.message || 'Course enrollment successful!');
+        await fetchData();
+      } else if (/already enrolled/i.test(responseMessage)) {
+        toast.error('You are already enrolled in this course for the selected semester.');
       } else {
         toast.error(response.message || 'Failed to enroll in course');
       }
     } catch (error: any) {
       console.error('Error enrolling:', error);
-      const errorMessage = error?.response?.data?.message || 'Failed to enroll in course';
-      toast.error(errorMessage);
+      const serverMessage = error?.response?.data?.message;
+      if (error?.response?.status === 409) {
+        toast.error(serverMessage || 'You are already enrolled in this course for the selected semester.');
+      } else {
+        toast.error(serverMessage || 'Failed to enroll in course');
+      }
     } finally {
       setEnrolling(null);
     }
   };
 
-  const isEnrolled = (courseId: number) => {
+  const matchSemester = (semesterA?: string, semesterB?: string) => {
+    if (!semesterA || !semesterB) return false;
+    return semesterA.trim().toLowerCase() === semesterB.trim().toLowerCase();
+  };
+
+  const isEnrolled = (courseId: number | string, selectedSemester?: string) => {
+    const normalizedCourseId = String(courseId);
+
+    if (selectedSemester) {
+      return enrolledCourses.some(
+        (course) =>
+          String(course.id) === normalizedCourseId &&
+          matchSemester(course.semester, selectedSemester)
+      );
+    }
+
     return enrolledCourses.some(
-      (course) => course.id === courseId && course.status === 'active'
+      (course) => String(course.id) === normalizedCourseId && course.status === 'active'
     );
   };
 
@@ -165,7 +237,7 @@ const StudentRegistrationPage: React.FC = () => {
               ) : (
                 enrolledCourses.map((course) => (
                   <motion.div
-                    key={course.id}
+                    key={`${course.id}-${course.semester}`}
                     whileHover={{ scale: 1.01 }}
                     className="rounded-3xl border border-white/5 bg-slate-950/90 p-5"
                   >
@@ -191,19 +263,22 @@ const StudentRegistrationPage: React.FC = () => {
             <p className="mt-2 text-sm text-slate-400">Filter available classes and choose the correct semester before enrolling.</p>
             <div className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">Semester</label>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">Select Semester</label>
                 <select
                   value={semester}
-                  onChange={(e) => setSemester(e.target.value)}
+                  onChange={handleSemesterChange}
                   className="w-full rounded-3xl border border-white/10 bg-slate-950/80 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
                 >
-                  <option value="">Choose a semester...</option>
-                  <option value="Spring 2024">Spring 2024</option>
-                  <option value="Summer 2024">Summer 2024</option>
-                  <option value="Fall 2024">Fall 2024</option>
-                  <option value="Winter 2024">Winter 2024</option>
-                  <option value="Spring 2025">Spring 2025</option>
+                  <option value="" disabled>
+                    {semesterOptions.length > 0 ? 'Choose a semester' : 'Loading semester options...'}
+                  </option>
+                  {semesterOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </select>
+                <p className="mt-1 text-xs text-slate-400">Choose the semester you want to enroll in. Future terms are supported if available.</p>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-300 mb-2">Search courses</label>
@@ -226,7 +301,8 @@ const StudentRegistrationPage: React.FC = () => {
           className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
         >
           {filteredCourses.map((course) => {
-            const enrolled = isEnrolled(course.id);
+            const enrolledSameSemester = isEnrolled(course.id, semester);
+            const enrolled = enrolledSameSemester || isEnrolled(course.id);
             return (
               <motion.div
                 key={course.id}
@@ -249,6 +325,11 @@ const StudentRegistrationPage: React.FC = () => {
                   <p>
                     <span className="font-semibold text-white">Credits:</span> {course.credits}
                   </p>
+                  {course.semester && (
+                    <p>
+                      <span className="font-semibold text-white">Semester:</span> {course.semester}
+                    </p>
+                  )}
                   {course.category && (
                     <p>
                       <span className="font-semibold text-white">Category:</span> {course.category}
@@ -268,9 +349,9 @@ const StudentRegistrationPage: React.FC = () => {
 
                 <button
                   onClick={() => handleEnroll(course.id)}
-                  disabled={enrolled || enrolling === course.id}
+                  disabled={enrolledSameSemester || enrolling === course.id}
                   className={`w-full rounded-3xl py-3 font-semibold transition-all ${
-                    enrolled
+                    enrolledSameSemester
                       ? 'bg-emerald-500 text-white cursor-not-allowed opacity-80'
                       : enrolling === course.id
                       ? 'bg-cyan-500 text-white cursor-wait'
@@ -278,7 +359,7 @@ const StudentRegistrationPage: React.FC = () => {
                   }`}
                 >
                   <Plus size={18} />
-                  {enrolled ? 'Already Enrolled' : enrolling === course.id ? 'Enrolling...' : 'Enroll Now'}
+                  {enrolledSameSemester ? 'Already Enrolled' : enrolling === course.id ? 'Enrolling...' : 'Enroll Now'}
                 </button>
               </motion.div>
             );

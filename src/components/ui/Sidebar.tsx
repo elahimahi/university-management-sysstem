@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 interface MenuItem {
   label: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   href?: string;
   children?: MenuItem[];
 }
@@ -56,7 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 ${depth > 0 ? 'ml-4' : ''}
               `}
             >
-              <span className="flex-shrink-0 w-5 h-5">{item.icon}</span>
+              {item.icon && <span className="flex-shrink-0 w-5 h-5">{item.icon}</span>}
               {!isCollapsed && (
                 <span className="font-medium truncate">{item.label}</span>
               )}
@@ -119,7 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     <motion.aside
       animate={{ width: isCollapsed ? 80 : 256 }}
       transition={{ duration: 0.3 }}
-      className="fixed left-0 top-16 bottom-0 bg-white dark:bg-navy-900 border-r border-navy-200 dark:border-navy-800 overflow-y-auto"
+      className="fixed left-0 top-16 bottom-0 bg-gradient-to-b from-navy-950 via-navy-900 to-navy-950 border-r border-navy-800 overflow-y-auto shadow-soft-lg backdrop-blur-xl"
     >
       <div className="p-4">
         {/* Toggle Button */}
@@ -128,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onToggle}
-            className="w-full mb-4 p-2 rounded-lg bg-navy-100 dark:bg-navy-800 text-navy-700 dark:text-navy-200 hover:bg-navy-200 dark:hover:bg-navy-700 transition-colors flex items-center justify-center"
+            className="w-full mb-4 p-2 rounded-xl bg-navy-800/80 text-slate-200 hover:bg-navy-700 transition-colors flex items-center justify-center"
           >
             <motion.svg
               animate={{ rotate: isCollapsed ? 180 : 0 }}
