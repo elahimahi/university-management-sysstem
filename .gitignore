@@ -1,27 +1,33 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
 .pnp.js
 
-# testing
+# Testing
 /coverage
 
-# production
+# Production
 /build
+/dist
 
-# misc
+# Misc
 .DS_Store
 .env
-.env.local
+.env*.local
 .env.development.local
 .env.test.local
 .env.production.local
 
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
+debug_*.log
+attendance_debug.log
+php-errors.log
+delete_user.log
+sms_log.txt
 
 # IDE
 .vscode
@@ -29,6 +35,77 @@ yarn-error.log*
 *.swp
 *.swo
 *~
+*.sublime-project
+*.sublime-workspace
 
 # OS
 Thumbs.db
+.DS_Store
+
+# Debug and test files (development only)
+debug.html
+debug-*.php
+test_*.html
+test_*.php
+test_*.json
+check_*.php
+verify_*.php
+mock_*.html
+diagnose*.js
+diagnose*.php
+student_login.json
+
+# Batch files (Windows development only)
+*.bat
+*.ps1
+
+# Backend specific
+backend/debug/
+backend/sqlsrv_ext/
+backend/core/db_connect.php
+
+# Frontend specific
+.cache
+.parcel-cache
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Other development docs
+QUICK_*.md
+FIX_*.md
+MY_*.md
+NETWORK_ERROR*.md
+PAYMENT_*.md
+FEES_*.md
+COURSE_*.md
+ADMIN_*.md
+APPROVAL_*.md
+ASSIGNMENT_*.md
+ATTENDANCE_*.md
+ACCOUNT_*.md
+CARD_*.md
+BEFORE_*.md
+COMPLETE_*.md
+CONTEXT_*.md
+CORS_*.md
+DEMO_*.md
+IMPLEMENTATION_*.md
+LOGIN_*.md
+ONEBANK_*.md
+OVERDUE_*.md
+REAL_*.md
+SETUP_*.md
+SMS_*.md
+STUDENT_*.md
+SYSTEM_*.md
+TESTING_*.md
+UNAUTHORIZED_*.md
+VERIFICATION_*.md
+BACKEND_API.md
+FIXES_COMPLETED.md
+SETUP_DATABASE.txt
+PAYMENT_CONFIG_TEMPLATE.php
+eslint_registration_output.txt
+diagnostic_output.txt
