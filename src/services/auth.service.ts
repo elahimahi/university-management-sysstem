@@ -11,7 +11,7 @@ import {
 import { getAccessToken, getRefreshToken } from '../utils/auth.utils';
 
 // API base URL - Points to backend server
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 /**
  * Generate a mock JWT token for testing
@@ -71,10 +71,7 @@ export const loginUser = async (
 ): Promise<{ user: User; tokens: AuthTokens }> => {
   try {
     console.debug('[auth.service] loginUser credentials', credentials);
-    const response = await authApi.post(
-      '/auth/login.php',
-      credentials
-    );
+    const response = await authApi.post('/auth/login', credentials);
     // Convert snake_case to camelCase
     const user = response.data.user;
     const mappedUser: User = {
@@ -113,10 +110,7 @@ export const registerUser = async (
 ): Promise<{ user: User; tokens: AuthTokens }> => {
   try {
     console.debug('[auth.service] registerUser data', data);
-    const response = await authApi.post(
-      '/auth/register.php',
-      data
-    );
+    const response = await authApi.post('/auth/register', data);
     // Convert snake_case to camelCase
     const user = response.data.user;
     const mappedUser: User = {

@@ -48,7 +48,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (allowedRoles && allowedRoles.length > 0 && user && user.role) {
     const userRole = user.role.toLowerCase();
     const normalizedAllowedRoles = allowedRoles.map(r => r.toLowerCase());
-    if (!normalizedAllowedRoles.includes(userRole)) {
+    
+    // Check if user's approval status is valid for protected routes (except pending-approval route)
+    if (location.pathname !== '/pending-approval' && (user.approvalStatus === 'pending' || user.approvalStatus === 'rejected')) {
+      return <Navigate to="/pending-approval" replace />;
+    }
+    
+    // SPECIAL CASE: Superadmin can access any page (including admin pages)
+    const hasAccess = normalizedAllowedRoles.includes(userRole) || userRole === 'superadmin';
+    
+    if (!hasAccess) {
     const roleNames = (allowedRoles || [])
       .filter(r => r)
       .map(r => (r.charAt(0).toUpperCase() + r.slice(1)))

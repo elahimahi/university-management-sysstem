@@ -1,8 +1,7 @@
 ﻿import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import toast from 'react-hot-toast';
 
-// Determine the correct API base URL (support both localhost:3000 and localhost:3001)
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 const API_TIMEOUT = parseInt(process.env.REACT_APP_API_TIMEOUT || '30000', 10);
 
 class ApiService {

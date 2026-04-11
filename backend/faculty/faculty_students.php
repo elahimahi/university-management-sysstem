@@ -39,14 +39,14 @@ try {
                     u.email,
                     e.id as enrollment_id,
                     e.status,
-                    (SELECT COUNT(*) FROM grades WHERE enrollment_id = e.id) as grades_count,
-                    (SELECT AVG(CAST(grade_point AS FLOAT)) FROM grades WHERE enrollment_id = e.id AND grade_point IS NOT NULL) as avg_grade_point
+                    (SELECT COUNT(*) FROM grades WHERE student_id = u.id AND course_id = ?) as grades_count,
+                    (SELECT AVG(CAST(points AS FLOAT)) FROM grades WHERE student_id = u.id AND course_id = ? AND points IS NOT NULL) as avg_grade_point
                 FROM enrollments e
                 JOIN users u ON e.student_id = u.id
                 WHERE e.course_id = ? AND (SELECT instructor_id FROM courses WHERE id = ?) = ?
                 ORDER BY u.last_name, u.first_name
             ");
-            $stmt->execute([$courseId, $courseId, $facultyId]);
+            $stmt->execute([$courseId, $courseId, $courseId, $courseId, $facultyId]);
         } else {
             // Get all students in all instructor's courses
             $stmt = $pdo->prepare("
@@ -59,8 +59,8 @@ try {
                     c.id as course_id,
                     e.id as enrollment_id,
                     e.status,
-                    (SELECT COUNT(*) FROM grades WHERE enrollment_id = e.id) as grades_count,
-                    (SELECT AVG(CAST(grade_point AS FLOAT)) FROM grades WHERE enrollment_id = e.id AND grade_point IS NOT NULL) as avg_grade_point
+                    (SELECT COUNT(*) FROM grades WHERE student_id = u.id AND course_id = c.id) as grades_count,
+                    (SELECT AVG(CAST(points AS FLOAT)) FROM grades WHERE student_id = u.id AND course_id = c.id AND points IS NOT NULL) as avg_grade_point
                 FROM enrollments e
                 JOIN users u ON e.student_id = u.id
                 JOIN courses c ON e.course_id = c.id
@@ -91,13 +91,14 @@ try {
 
         // Verify faculty can grade this student (owns the course)
         $verify = $pdo->prepare("
-            SELECT e.id FROM enrollments e
+            SELECT e.id, e.student_id, e.course_id FROM enrollments e
             JOIN courses c ON e.course_id = c.id
             WHERE e.id = ? AND c.instructor_id = ?
         ");
         $verify->execute([$assignmentId, $facultyId]);
+        $enrollment = $verify->fetch();
         
-        if (!$verify->fetch()) {
+        if (!$enrollment) {
             http_response_code(403);
             echo json_encode(['message' => 'Not authorized to grade this student']);
             exit;
@@ -105,10 +106,10 @@ try {
 
         // Add grade for student
         $stmt = $pdo->prepare("
-            INSERT INTO grades (enrollment_id, grade, grade_point, assessment_type, recorded_at)
-            VALUES (?, ?, ?, 'Evaluation', GETDATE())
+            INSERT INTO grades (student_id, course_id, grade, points, assigned_at)
+            VALUES (?, ?, ?, ?, GETDATE())
         ");
-        $stmt->execute([$assignmentId, null, $facultyRating, null]);
+        $stmt->execute([$enrollment['student_id'], $enrollment['course_id'], 'Evaluation', $facultyRating]);
 
         echo json_encode([
             'success' => true,

@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'faculty' | 'admin' | 'super_admin';
+export type UserRole = 'student' | 'faculty' | 'admin' | 'superadmin';
 
 export interface User {
   id: string;
@@ -7,7 +7,10 @@ export interface User {
   lastName: string;
   role: UserRole;
   profilePicture?: string;
+  phone?: string;
   isEmailVerified: boolean;
+  approvalStatus?: 'approved' | 'pending' | 'rejected';
+  rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
 }

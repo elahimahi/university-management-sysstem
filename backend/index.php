@@ -5,30 +5,37 @@
  * This is the main entry point for the backend API.
  * It routes incoming requests to the appropriate handler based on the URL path.
  * 
- * Base URL: http://localhost/Database_Project/Database-main/Database-main/backend
+ * Base URL: http://localhost:5000
  * All endpoints return JSON responses.
  */
 
-// Set CORS headers (may already be set by router.php, but ensure they're present)
-if (!headers_sent()) {
-    header("Access-Control-Allow-Origin: *");
-    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH");
-    header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept");
-    header("Access-Control-Max-Age: 86400");
-    header("Content-Type: application/json; charset=UTF-8");
+// Enable CORS for all requests
+header("Access-Control-Allow-Origin: *"); // Allow all origins for testing purposes
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json; charset=UTF-8");
 
-    // Handle preflight OPTIONS requests immediately
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-        http_response_code(200);
-        exit();
-    }
+// Handle preflight requests immediately
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
 }
 
 // Get the request URI and method
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
-// Remove leading/trailing slashes for routing (works with PHP built-in server)
+// Strip the base path for both old Apache setup and new PHP dev server
+$basePath = '/Database_Project/Database-main/Database-main/backend';
+if (strpos($requestUri, $basePath) === 0) {
+    // Old Apache path format
+    $requestUri = substr($requestUri, strlen($basePath));
+} 
+// For PHP dev server, URI is already relative (like /auth/login)
+// No need to strip anything
+
+// Remove leading/trailing slashes and get the route
 $route = strtolower(trim($requestUri, '/'));
 
 // If route is empty (root request), handle separately
@@ -96,8 +103,6 @@ try {
             require_once 'student/get_course_assignments.php';
         } elseif ($action === 'submit-assignment' && $requestMethod === 'POST') {
             require_once 'student/submit_assignment.php';
-        } elseif ($action === 'get-fees-with-deadline' && $requestMethod === 'POST') {
-            require_once 'student/get_fees_with_deadline.php';
         }
     }
     // Courses Routes
@@ -168,14 +173,6 @@ try {
             require_once 'admin/get_sms_logs.php';
         } elseif ($action === 'payments' && $requestMethod === 'GET') {
             require_once 'admin/get_payments.php';
-        } elseif ($action === 'set-payment-deadline' && $requestMethod === 'POST') {
-            require_once 'admin/set_payment_deadline.php';
-        } elseif ($action === 'apply-penalties' && $requestMethod === 'POST') {
-            require_once 'admin/apply_penalties.php';
-        } elseif ($action === 'send-deadline-reminders' && $requestMethod === 'POST') {
-            require_once 'admin/send_deadline_reminders.php';
-        } elseif ($action === 'run-fee-batch-job' && $requestMethod === 'POST') {
-            require_once 'admin/run_fee_batch_job.php';
         }
     }
     // Payment Routes
