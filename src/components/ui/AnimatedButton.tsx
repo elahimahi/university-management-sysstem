@@ -3,6 +3,7 @@ import { motion, HTMLMotionProps } from 'framer-motion';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'success';
 type ButtonSize = 'sm' | 'md' | 'lg';
+type AnimationType = 'ripple' | 'glow' | 'gradient-pulse' | 'shake';
 
 interface AnimatedButtonProps extends Omit<HTMLMotionProps<'button'>, 'children' | 'size'> {
   variant?: ButtonVariant;
@@ -11,6 +12,7 @@ interface AnimatedButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   fullWidth?: boolean;
+  animationType?: AnimationType;
   children: React.ReactNode;
 }
 
@@ -21,6 +23,7 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   leftIcon,
   rightIcon,
   fullWidth = false,
+  animationType = 'ripple',
   children,
   className = '',
   disabled,
@@ -28,23 +31,29 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   ...props
 }) => {
   const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
+  const [isShaking, setIsShaking] = useState(false);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled || isLoading) return;
 
-    // Create ripple effect
-    const button = e.currentTarget;
-    const rect = button.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const id = Date.now();
+    if (animationType === 'ripple') {
+      // Create ripple effect
+      const button = e.currentTarget;
+      const rect = button.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const id = Date.now();
 
-    setRipples((prev) => [...prev, { x, y, id }]);
+      setRipples((prev) => [...prev, { x, y, id }]);
 
-    // Remove ripple after animation
-    setTimeout(() => {
-      setRipples((prev) => prev.filter((ripple) => ripple.id !== id));
-    }, 600);
+      // Remove ripple after animation
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((ripple) => ripple.id !== id));
+      }, 600);
+    } else if (animationType === 'shake') {
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
+    }
 
     onClick?.(e);
   };
@@ -67,15 +76,34 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
 
   return (
     <motion.button
-      whileHover={disabled || isLoading ? {} : { scale: 1.02 }}
+      whileHover={disabled || isLoading ? {} : { 
+        scale: animationType === 'glow' ? 1.05 : 1.02,
+      }}
       whileTap={disabled || isLoading ? {} : { scale: 0.98 }}
-      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
+      animate={animationType === 'gradient-pulse' ? { 
+        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+      } : animationType === 'shake' && isShaking ? {
+        x: [0, -8, 8, -8, 8, 0],
+      } : {}}
+      transition={animationType === 'gradient-pulse' ? {
+        duration: 2,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      } : animationType === 'shake' ? {
+        duration: 0.5,
+        ease: 'easeInOut',
+      } : {}}
+      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${
+        animationType === 'glow' ? 'shadow-glow hover:shadow-glow-lg' : ''
+      } ${
+        animationType === 'gradient-pulse' ? 'bg-gradient-to-r from-navy-900 via-navy-700 to-navy-900 bg-200%' : ''
+      } ${className}`}
       disabled={disabled || isLoading}
       onClick={handleClick}
       {...props}
     >
       {/* Ripple Effect */}
-      {ripples.map((ripple) => (
+      {animationType === 'ripple' && ripples.map((ripple) => (
         <motion.span
           key={ripple.id}
           initial={{ scale: 0, opacity: 1 }}
@@ -91,6 +119,16 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
           }}
         />
       ))}
+
+      {/* Glow Effect */}
+      {animationType === 'glow' && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-white to-transparent opacity-20"
+        />
+      )}
 
       {/* Content */}
       {isLoading ? (

@@ -1,0 +1,5 @@
+{"timestamp":"2026-04-05 18:52:35","message":"Initiating SSLCommerz payment","data":{"transaction_id":"TXN_1775407955_9302","amount":100,"method":"bkash"}}
+{"timestamp":"2026-04-05 18:53:12","message":"Using mock payment URL for development","data":{"transaction_id":"TXN_1775407992_9039","amount":100,"method":"bkash"}}
+{"timestamp":"2026-04-05 18:54:10","message":"Using mock payment URL for development","data":{"transaction_id":"TXN_1775408050_3475","amount":100,"method":"bkash"}}
+{"timestamp":"2026-04-05 18:55:56","message":"Using mock payment URL for development","data":{"transaction_id":"TXN_1775408156_5877","amount":100,"method":"bkash"}}
+{"timestamp":"2026-04-05 18:59:32","message":"Using mock payment URL for development","data":{"transaction_id":"TXN_1775408372_8911","amount":100,"method":"bkash"}}

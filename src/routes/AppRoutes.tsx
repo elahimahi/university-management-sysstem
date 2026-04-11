@@ -34,13 +34,13 @@ import StudentAttendancePage from '../pages/student/StudentAttendancePage';
 import StudentFeesPage from '../pages/student/StudentFeesPage';
 
 
-import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminFeesPage from '../pages/admin/AdminFeesPage';
 import AdminVerificationPage from '../pages/admin/AdminVerificationPage';
-import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
 import UserManagementPage from '../pages/admin/UserManagementPage';
 import CoursesManagementPage from '../pages/admin/CoursesManagementPage';
 import FeesManagementPage from '../pages/admin/FeesManagementPage';
+import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
+import PaymentSuccessPage from '../pages/student/PaymentSuccessPage';
 
 const DashboardRedirect: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -265,6 +265,15 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute requireAuth={true} allowedRoles={['student']}>
               <StudentFeesPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/payment/success"
+          element={
+            <ProtectedRoute requireAuth={true} allowedRoles={['student']}>
+              <PaymentSuccessPage />
             </ProtectedRoute>
           }
         />

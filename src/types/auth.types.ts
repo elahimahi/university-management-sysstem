@@ -7,6 +7,7 @@ export interface User {
   lastName: string;
   role: UserRole;
   profilePicture?: string;
+  phone?: string;
   isEmailVerified: boolean;
   approvalStatus?: 'approved' | 'pending' | 'rejected';
   rejectionReason?: string;

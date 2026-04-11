@@ -11,7 +11,7 @@ import {
 import { getAccessToken, getRefreshToken } from '../utils/auth.utils';
 
 // API base URL - Points to backend server
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/Database_Project/university-management-sysstem/backend';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 /**
  * Generate a mock JWT token for testing
@@ -71,10 +71,7 @@ export const loginUser = async (
 ): Promise<{ user: User; tokens: AuthTokens }> => {
   try {
     console.debug('[auth.service] loginUser credentials', credentials);
-    const response = await authApi.post(
-      '/auth/login',
-      credentials
-    );
+    const response = await authApi.post('/auth/login', credentials);
     // Convert snake_case to camelCase
     const user = response.data.user;
     const mappedUser: User = {
@@ -85,8 +82,6 @@ export const loginUser = async (
       role: user.role,
       profilePicture: user.profile_picture,
       isEmailVerified: user.is_email_verified,
-      approvalStatus: user.approval_status,
-      rejectionReason: user.rejection_reason,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
@@ -115,10 +110,7 @@ export const registerUser = async (
 ): Promise<{ user: User; tokens: AuthTokens }> => {
   try {
     console.debug('[auth.service] registerUser data', data);
-    const response = await authApi.post(
-      '/auth/register',
-      data
-    );
+    const response = await authApi.post('/auth/register', data);
     // Convert snake_case to camelCase
     const user = response.data.user;
     const mappedUser: User = {
@@ -129,8 +121,6 @@ export const registerUser = async (
       role: user.role,
       profilePicture: user.profile_picture,
       isEmailVerified: user.is_email_verified,
-      approvalStatus: user.approval_status,
-      rejectionReason: user.rejection_reason,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
@@ -245,8 +235,8 @@ export const logoutUser = async (): Promise<void> => {
  */
 export const getCurrentUser = async (): Promise<User> => {
   try {
-    // Use the correct backend endpoint for current user profile
-    const response = await authApi.get('/users/me');
+    // Use the correct PHP backend endpoint for current user profile
+    const response = await authApi.get('users/me.php');
     return response.data;
   } catch (error) {
     throw error;

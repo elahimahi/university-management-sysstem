@@ -16,7 +16,7 @@ interface Course {
   name: string;
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 const FacultyAssignmentsPage: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -227,18 +227,18 @@ const FacultyAssignmentsPage: React.FC = () => {
               <Input
                 placeholder="Assignment title"
                 value={createForm.title}
-                onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateForm({ ...createForm, title: e.target.value })}
               />
               <Textarea
                 placeholder="Description"
                 value={createForm.description}
-                onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCreateForm({ ...createForm, description: e.target.value })}
                 rows={4}
               />
               <Input
                 type="datetime-local"
                 value={createForm.deadline}
-                onChange={(e) => setCreateForm({ ...createForm, deadline: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateForm({ ...createForm, deadline: e.target.value })}
               />
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
@@ -370,7 +370,7 @@ const FacultyAssignmentsPage: React.FC = () => {
             <Textarea
               placeholder="Feedback (optional)"
               value={gradeForm.feedback}
-              onChange={(e) => setGradeForm({ ...gradeForm, feedback: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setGradeForm({ ...gradeForm, feedback: e.target.value })}
               rows={3}
             />
             <div className="flex justify-end gap-2">

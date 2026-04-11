@@ -30,6 +30,25 @@ if (!isset($data['id'])) {
 }
 
 try {
+    $courseCode = strtoupper(preg_replace('/\s+/', ' ', trim($data['code'] ?? '')));
+    $courseName = trim($data['name'] ?? '');
+
+    if ($courseCode === '') {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Course code is required']);
+        exit;
+    }
+
+    // Prevent duplicate course codes on update, excluding current course id
+    $check = $pdo->prepare("SELECT COUNT(*) as count FROM courses WHERE REPLACE(LOWER(LTRIM(RTRIM(code))), ' ', '') = REPLACE(LOWER(LTRIM(RTRIM(?))), ' ', '') AND id <> ?");
+    $check->execute([$courseCode, $data['id']]);
+    $exists = $check->fetch();
+    if ($exists && (int)$exists['count'] > 0) {
+        http_response_code(409);
+        echo json_encode(['status' => 'error', 'message' => 'Course code already exists']);
+        exit;
+    }
+
     $stmt = $pdo->prepare("
         UPDATE courses 
         SET code = ?, name = ?, credits = ?, category = ?, level = ?, instructor_id = ?
@@ -37,8 +56,8 @@ try {
     ");
     
     $stmt->execute([
-        $data['code'] ?? null,
-        $data['name'] ?? null,
+        $courseCode,
+        $courseName,
         $data['credits'] ?? 3,
         $data['category'] ?? 'General',
         $data['level'] ?? 'Undergraduate',
