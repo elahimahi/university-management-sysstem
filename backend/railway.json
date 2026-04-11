@@ -1,8 +1,9 @@
 {
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-   "startCommand": "apache2-foreground"
+    "startCommand": "apache2-foreground"
   }
 }
