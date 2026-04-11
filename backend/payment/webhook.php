@@ -5,10 +5,110 @@
  * POST /payment/webhook
  */
 
+// ============================================
+// CORS HEADERS - MUST BE FIRST
+// ============================================
+ob_start();
+
+// Allow requests from localhost (all ports)
+$allowed_origins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://localhost',
+    'http://127.0.0.1'
+];
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+// Set appropriate origin header
+if (in_array($origin, $allowed_origins) && !empty($origin)) {
+    header('Access-Control-Allow-Origin: ' . $origin, true);
+} elseif (empty($origin)) {
+    header('Access-Control-Allow-Origin: http://localhost', true);
+} else {
+    header('Access-Control-Allow-Origin: http://localhost:3000', true);
+}
+
+http_response_code(200);
+header('Access-Control-Allow-Credentials: true', true);
+header('Access-Control-Max-Age: 86400', true);
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD', true);
+header('Access-Control-Allow-Headers: Content-Type, Accept, X-Requested-With, Authorization, Origin', true);
+header('Content-Type: application/json; charset=utf-8', true);
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit(0);
+}
+
 require_once __DIR__ . '/../core/db_connect.php';
 require_once __DIR__ . '/../core/PaymentGatewayFactory.php';
 require_once __DIR__ . '/../core/sms_service.php';
-header('Content-Type: application/json');
+
+function ensureAdminNotificationsTransactionColumn($pdo) {
+    try {
+        $pdo->exec("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('admin_notifications') AND name = 'transaction_id') ALTER TABLE admin_notifications ADD transaction_id VARCHAR(100) NULL");
+    } catch (Exception $e) {
+        error_log('Failed to ensure admin_notifications.transaction_id column: ' . $e->getMessage());
+    }
+}
+
+function ensureAdminNotificationsTransactionIndex($pdo) {
+    try {
+        $pdo->exec("IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID('admin_notifications') AND name = 'UQ_AdminNotifications_TransactionId') CREATE UNIQUE INDEX UQ_AdminNotifications_TransactionId ON admin_notifications(transaction_id) WHERE transaction_id IS NOT NULL");
+    } catch (Exception $e) {
+        error_log('Failed to ensure admin_notifications.transaction_id unique index: ' . $e->getMessage());
+    }
+}
+
+function ensurePaymentsTransactionUniqueIndex($pdo) {
+    try {
+        $pdo->exec("IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID('payments') AND name = 'UQ_Payments_TransactionId') CREATE UNIQUE INDEX UQ_Payments_TransactionId ON payments(transaction_id) WHERE transaction_id IS NOT NULL");
+    } catch (Exception $e) {
+        error_log('Failed to ensure payments.transaction_id unique index: ' . $e->getMessage());
+    }
+}
+
+function adminNotificationExists($pdo, $transactionId, $student_id, $fee_id, $amount, $payment_method) {
+    $columnExistsStmt = $pdo->query("SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('admin_notifications') AND name = 'transaction_id'");
+    $columnExists = $columnExistsStmt->fetch();
+
+    if ($columnExists) {
+        $checkNotifyStmt = $pdo->prepare('SELECT id FROM admin_notifications WHERE transaction_id = ?');
+        $checkNotifyStmt->execute([$transactionId]);
+    } else {
+        $checkNotifyStmt = $pdo->prepare('SELECT id FROM admin_notifications WHERE student_id = ? AND fee_id = ? AND amount = ? AND payment_method = ?');
+        $checkNotifyStmt->execute([$student_id, $fee_id, $amount, $payment_method]);
+    }
+
+    return (bool) $checkNotifyStmt->fetch();
+}
+
+function insertAdminNotification($pdo, $student_id, $fee_id, $amount, $payment_method, $fee_description, $transaction_id = null) {
+    ensureAdminNotificationsTransactionColumn($pdo);
+
+    $columnExistsStmt = $pdo->query("SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('admin_notifications') AND name = 'transaction_id'");
+    $columnExists = $columnExistsStmt->fetch();
+
+    if ($columnExists) {
+        ensureAdminNotificationsTransactionIndex($pdo);
+        $notifyStmt = $pdo->prepare('INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status, transaction_id) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        try {
+            $notifyStmt->execute([$student_id, $fee_id, $amount, $payment_method, $fee_description, 'unread', $transaction_id]);
+        } catch (PDOException $e) {
+            $sqlError = $e->errorInfo[1] ?? null;
+            if (in_array($sqlError, [2601, 2627], true)) {
+                return;
+            }
+            throw $e;
+        }
+    } else {
+        $notifyStmt = $pdo->prepare('INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status) VALUES (?, ?, ?, ?, ?, ?)');
+        $notifyStmt->execute([$student_id, $fee_id, $amount, $payment_method, $fee_description, 'unread']);
+    }
+}
 
 // Get webhook data based on gateway
 $webhookData = $_POST;
@@ -60,6 +160,8 @@ function processSuccessfulPayment($pdo, $transactionId) {
         return;
     }
 
+    ensurePaymentsTransactionUniqueIndex($pdo);
+
     // Check if payment already recorded
     $checkStmt = $pdo->prepare('SELECT id FROM payments WHERE transaction_id = ?');
     $checkStmt->execute([$transactionId]);
@@ -69,15 +171,24 @@ function processSuccessfulPayment($pdo, $transactionId) {
 
     // Record the payment
     $paymentStmt = $pdo->prepare('
-        INSERT INTO payments (fee_id, amount_paid, payment_date, payment_method, transaction_id)
-        VALUES (?, ?, GETDATE(), ?, ?)
+        INSERT INTO payments (fee_id, amount_paid, payment_date, payment_method, transaction_id, phone_or_account)
+        VALUES (?, ?, GETDATE(), ?, ?, ?)
     ');
-    $paymentStmt->execute([
-        $transaction['fee_id'],
-        $transaction['amount'],
-        $transaction['payment_method'],
-        $transactionId
-    ]);
+    try {
+        $paymentStmt->execute([
+            $transaction['fee_id'],
+            $transaction['amount'],
+            $transaction['payment_method'],
+            $transactionId,
+            $transaction['contact_info'] ?? ''
+        ]);
+    } catch (PDOException $e) {
+        $sqlError = $e->errorInfo[1] ?? null;
+        if (in_array($sqlError, [2601, 2627], true)) {
+            return;
+        }
+        throw $e;
+    }
 
     // Update fee status if needed
     $totalPaidStmt = $pdo->prepare('SELECT SUM(amount_paid) as total FROM payments WHERE fee_id = ?');
@@ -115,17 +226,16 @@ function processSuccessfulPayment($pdo, $transactionId) {
     $feeDetailStmt->execute([$transaction['fee_id']]);
     $feeDetail = $feeDetailStmt->fetch();
 
-    $notifyStmt = $pdo->prepare('
-        INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ');
-    $notifyStmt->execute([
-        $transaction['student_id'],
-        $transaction['fee_id'],
-        $transaction['amount'],
-        $transaction['payment_method'],
-        $feeDetail['description'] ?? 'Fee Payment',
-        'unread'
-    ]);
+    if (!adminNotificationExists($pdo, $transactionId, $transaction['student_id'], $transaction['fee_id'], $transaction['amount'], $transaction['payment_method'])) {
+        insertAdminNotification(
+            $pdo,
+            $transaction['student_id'],
+            $transaction['fee_id'],
+            $transaction['amount'],
+            $transaction['payment_method'],
+            $feeDetail['description'] ?? 'Fee Payment',
+            $transactionId
+        );
+    }
 }
 ?>

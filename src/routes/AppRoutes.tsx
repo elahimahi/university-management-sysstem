@@ -24,14 +24,16 @@ import FacultyStudentsManagementPage from '../pages/faculty/FacultyStudentsManag
 import FacultyAttendancePage from '../pages/faculty/FacultyAttendancePage';
 import FacultyAttendanceMarkingPage from '../pages/faculty/FacultyAttendanceMarkingPage';
 import FacultyGradesPage from '../pages/faculty/FacultyGradesPage';
-import FacultyGradesSubmissionPage from '../pages/faculty/FacultyGradesSubmissionPage';
-import SubmitGradePage from '../pages/faculty/SubmitGradePage';
+import FacultyAssignmentsPage from '../pages/faculty/FacultyAssignmentsPage';
 import FacultyReportsPage from '../pages/faculty/FacultyReportsPage';
+import FacultyNotificationsPage from '../pages/faculty/FacultyNotificationsPage';
 import StudentOverviewPage from '../pages/student/StudentOverviewPage';
 import StudentRegistrationPage from '../pages/student/StudentRegistrationPage';
 import StudentGradesPage from '../pages/student/StudentGradesPage';
 import StudentAttendancePage from '../pages/student/StudentAttendancePage';
+import StudentAssignmentsPage from '../pages/student/StudentAssignmentsPage';
 import StudentFeesPage from '../pages/student/StudentFeesPage';
+import StudentNotificationsPage from '../pages/student/StudentNotificationsPage';
 
 
 import AdminFeesPage from '../pages/admin/AdminFeesPage';
@@ -77,7 +79,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/student/dashboard"
           element={
-            <ProtectedRoute requireAuth={true}>
+            <ProtectedRoute requireAuth={true} allowedRoles={['student']}>
               <StudentDashboard />
             </ProtectedRoute>
           }
@@ -95,7 +97,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/faculty/dashboard"
           element={
-            <ProtectedRoute requireAuth={true}>
+            <ProtectedRoute requireAuth={true} allowedRoles={['faculty']}>
               <FacultyDashboard />
             </ProtectedRoute>
           }
@@ -202,21 +204,22 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/faculty/submit-grades"
+          path="/faculty/assignments"
           element={
             <ProtectedRoute requireAuth={true} allowedRoles={['faculty']}>
-              <FacultyGradesSubmissionPage />
+              <FacultyAssignmentsPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/faculty/submit-grade"
+          path="/faculty/notifications"
           element={
             <ProtectedRoute requireAuth={true} allowedRoles={['faculty']}>
-              <SubmitGradePage />
+              <FacultyNotificationsPage />
             </ProtectedRoute>
           }
         />
+        {/* Grade submission routes removed - faculty grade submission disabled */}
         <Route
           path="/faculty/reports"
           element={
@@ -261,10 +264,26 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path="/student/assignments"
+          element={
+            <ProtectedRoute requireAuth={true} allowedRoles={['student']}>
+              <StudentAssignmentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/student/fees"
           element={
             <ProtectedRoute requireAuth={true} allowedRoles={['student']}>
               <StudentFeesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/notifications"
+          element={
+            <ProtectedRoute requireAuth={true} allowedRoles={['student']}>
+              <StudentNotificationsPage />
             </ProtectedRoute>
           }
         />

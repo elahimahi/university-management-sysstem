@@ -62,19 +62,20 @@ const StatsCard: React.FC<StatsCardProps> = ({
   return (
     <motion.div
       animate={controls}
-      whileHover={{ y: -5, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
-      className="card relative overflow-hidden"
+      whileHover={{ y: -8, boxShadow: '0 25px 80px rgba(0,0,0,0.25)' }}
+      className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-950/90 via-slate-900/80 to-slate-950/80 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.35)]"
     >
       {/* Gradient Background */}
-      <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${colorClasses[color]} opacity-10 rounded-full -mr-16 -mt-16`} />
+      <div className={`absolute top-0 right-0 w-40 h-40 bg-gradient-to-br ${colorClasses[color]} opacity-20 rounded-full -mr-16 -mt-16 blur-2xl`} />
+      <div className="absolute bottom-0 left-0 w-36 h-36 bg-gradient-to-br from-white/10 to-transparent opacity-70 rounded-full -mb-10 -ml-10 blur-2xl" />
 
       {/* Content */}
       <div className="relative space-y-4">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-navy-600 dark:text-navy-400">{title}</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-400">{title}</p>
             <motion.div
-              className="text-4xl font-display font-bold text-navy-900 dark:text-white mt-2"
+              className="text-4xl font-display font-bold text-white mt-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -88,7 +89,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: 'spring', stiffness: 200, delay: 0.3 }}
-              className={`w-12 h-12 rounded-lg bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center text-white shadow-lg`}
+              className={`w-14 h-14 rounded-3xl bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center text-white shadow-2xl shadow-black/20`}
             >
               {icon}
             </motion.div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { 
   BookOpen, 
   Users, 
@@ -6,7 +7,8 @@ import {
   BarChart3,
   PlusCircle,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  TrendingUp,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,6 +19,13 @@ interface FacultyStats {
   totalStudents: number;
   pendingGrades: number;
   totalGradesSubmitted: number;
+  attendanceRate: number;
+  attendanceBreakdown?: {
+    presentPercent: number;
+    latePercent: number;
+    absentPercent: number;
+    total: number;
+  };
 }
 
 const FacultyDashboardPage: React.FC = () => {
@@ -27,6 +36,13 @@ const FacultyDashboardPage: React.FC = () => {
     totalStudents: 0,
     pendingGrades: 0,
     totalGradesSubmitted: 0,
+    attendanceRate: 0,
+    attendanceBreakdown: {
+      presentPercent: 0,
+      latePercent: 0,
+      absentPercent: 0,
+      total: 0,
+    },
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +65,13 @@ const FacultyDashboardPage: React.FC = () => {
           totalStudents: 0,
           pendingGrades: 0,
           totalGradesSubmitted: 0,
+          attendanceRate: 0,
+          attendanceBreakdown: {
+            presentPercent: 0,
+            latePercent: 0,
+            absentPercent: 0,
+            total: 0,
+          },
         });
         setError(null);
       } else {
@@ -68,12 +91,14 @@ const FacultyDashboardPage: React.FC = () => {
     value,
     color,
     onClick,
+    suffix = '',
   }: {
     icon: React.ComponentType<any>;
     label: string;
     value: number;
     color: string;
     onClick: () => void;
+    suffix?: string;
   }) => (
     <button
       onClick={onClick}
@@ -82,7 +107,7 @@ const FacultyDashboardPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium opacity-75">{label}</p>
-          <p className="text-3xl font-bold mt-2">{value}</p>
+          <p className="text-3xl font-bold mt-2">{value}{suffix}</p>
         </div>
         <Icon size={40} className="opacity-30" />
       </div>
@@ -121,7 +146,7 @@ const FacultyDashboardPage: React.FC = () => {
         ) : (
           <>
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
               <StatCard
                 icon={BookOpen}
                 label="My Courses"
@@ -136,6 +161,7 @@ const FacultyDashboardPage: React.FC = () => {
                 color="bg-purple-900/30 border border-purple-500/30 text-purple-100"
                 onClick={() => navigate('/faculty/my-students')}
               />
+
               <StatCard
                 icon={ClipboardList}
                 label="Pending Grades"
@@ -143,13 +169,36 @@ const FacultyDashboardPage: React.FC = () => {
                 color="bg-orange-900/30 border border-orange-500/30 text-orange-100"
                 onClick={() => navigate('/faculty/grades')}
               />
-              <StatCard
-                icon={BarChart3}
-                label="Grades Submitted"
-                value={stats.totalGradesSubmitted}
-                color="bg-green-900/30 border border-green-500/30 text-green-100"
-                onClick={() => navigate('/faculty/grades')}
-              />
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                onClick={() => navigate('/faculty/attendance')}
+                className="bg-cyan-900/30 border border-cyan-500/30 text-cyan-100 rounded-lg p-6 cursor-pointer hover:bg-cyan-900/50 transition-all"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-cyan-300">Attendance Rate</h3>
+                  <TrendingUp className="w-5 h-5 text-cyan-400" />
+                </div>
+                <div className="mb-4">
+                  <div className="text-3xl font-bold text-cyan-200">{Math.round(stats.attendanceRate)}%</div>
+                  <p className="text-xs text-cyan-300 mt-1">Overall attendance score</p>
+                </div>
+                {stats.attendanceBreakdown && stats.attendanceBreakdown.total > 0 && (
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="bg-green-900/40 border border-green-500/40 rounded p-2">
+                      <div className="font-bold text-green-400">{stats.attendanceBreakdown.presentPercent}%</div>
+                      <div className="text-green-300 text-xs">Present</div>
+                    </div>
+                    <div className="bg-yellow-900/40 border border-yellow-500/40 rounded p-2">
+                      <div className="font-bold text-yellow-400">{stats.attendanceBreakdown.latePercent}%</div>
+                      <div className="text-yellow-300 text-xs">Late</div>
+                    </div>
+                    <div className="bg-red-900/40 border border-red-500/40 rounded p-2">
+                      <div className="font-bold text-red-400">{stats.attendanceBreakdown.absentPercent}%</div>
+                      <div className="text-red-300 text-xs">Absent</div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
             </div>
 
             {/* Quick Actions */}
@@ -178,10 +227,10 @@ const FacultyDashboardPage: React.FC = () => {
                   📋 Mark Attendance
                 </button>
                 <button
-                  onClick={() => navigate('/faculty/submit-grades')}
+                  onClick={() => navigate('/faculty/grades')}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-105"
                 >
-                  ⭐ Submit Grades
+                  ⭐ View Grades
                 </button>
                 <button
                   onClick={() => navigate('/faculty/assignments')}

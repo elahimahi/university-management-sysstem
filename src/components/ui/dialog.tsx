@@ -25,18 +25,29 @@ interface DialogTriggerProps {
 }
 
 export const Dialog: React.FC<DialogProps> = ({ children, open, onOpenChange }) => {
-  if (!open) return null;
+  const childArray = React.Children.toArray(children);
+  const triggerChildren = childArray.filter(
+    (child) => !React.isValidElement(child) || child.type !== DialogContent
+  );
+  const contentChildren = childArray.filter(
+    (child): child is React.ReactElement => React.isValidElement(child) && child.type === DialogContent
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50"
-        onClick={() => onOpenChange(false)}
-      />
-      <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
-        {children}
-      </div>
-    </div>
+    <>
+      {triggerChildren}
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => onOpenChange(false)}
+          />
+          <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-900/95 rounded-3xl shadow-2xl shadow-slate-950/50 border border-slate-700/60 max-w-md w-full mx-4">
+            {contentChildren}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -53,7 +64,7 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({ children }) => (
 );
 
 export const DialogTitle: React.FC<DialogTitleProps> = ({ children }) => (
-  <h2 className="text-lg font-semibold">
+  <h2 className="text-lg font-semibold text-slate-100">
     {children}
   </h2>
 );

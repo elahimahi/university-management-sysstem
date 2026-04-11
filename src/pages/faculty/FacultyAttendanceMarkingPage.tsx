@@ -14,12 +14,27 @@ interface AttendanceRecord {
   status: 'present' | 'absent' | 'late' | '';
 }
 
+interface AttendanceSummary {
+  total: number;
+  present: number;
+  late: number;
+  absent: number;
+  rate: number;
+}
+
 const FacultyAttendanceMarkingPage: React.FC = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary>({
+    total: 0,
+    present: 0,
+    late: 0,
+    absent: 0,
+    rate: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +102,26 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
     }
   };
 
+  const calculateAttendanceSummary = (records: AttendanceRecord[]) => {
+    const present = records.filter(record => record.status === 'present').length;
+    const late = records.filter(record => record.status === 'late').length;
+    const absent = records.filter(record => record.status === 'absent').length;
+    const total = present + late + absent;
+    const rate = total > 0 ? Math.round(((present + late * 0.5) / total) * 1000) / 10 : 0;
+
+    setAttendanceSummary({
+      total,
+      present,
+      late,
+      absent,
+      rate,
+    });
+  };
+
+  useEffect(() => {
+    calculateAttendanceSummary(attendance);
+  }, [attendance]);
+
   const handleStatusChange = (enrollmentId: number, status: string) => {
     setAttendance(
       attendance.map(record =>
@@ -119,6 +154,15 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
 
       if (response.ok) {
         setSuccess('✅ Attendance saved successfully!');
+        if (data.attendanceSummary) {
+          setAttendanceSummary({
+            total: data.attendanceSummary.total || 0,
+            present: data.attendanceSummary.presentCount || 0,
+            late: data.attendanceSummary.lateCount || 0,
+            absent: data.attendanceSummary.absentCount || 0,
+            rate: data.attendanceSummary.attendanceRate || 0,
+          });
+        }
         setTimeout(() => setSuccess(null), 3000);
       } else {
         setError(data.error || 'Failed to save attendance');
@@ -232,6 +276,25 @@ const FacultyAttendanceMarkingPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Attendance Summary */}
+        {selectedCourse && attendance.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-slate-900/90 border border-slate-700 rounded-3xl p-6">
+              <p className="text-sm uppercase text-slate-400 tracking-wider">Attendance Rate</p>
+              <p className="text-4xl font-bold text-cyan-400 mt-3">{attendanceSummary.rate}%</p>
+              <p className="text-xs text-slate-500 mt-2">Based on marked attendance</p>
+            </div>
+            <div className="bg-slate-900/90 border border-slate-700 rounded-3xl p-6">
+              <p className="text-sm uppercase text-slate-400 tracking-wider">Present</p>
+              <p className="text-4xl font-bold text-emerald-400 mt-3">{attendanceSummary.present}</p>
+            </div>
+            <div className="bg-slate-900/90 border border-slate-700 rounded-3xl p-6">
+              <p className="text-sm uppercase text-slate-400 tracking-wider">Late / Absent</p>
+              <p className="text-4xl font-bold text-yellow-400 mt-3">{attendanceSummary.late} / {attendanceSummary.absent}</p>
+            </div>
+          </div>
+        )}
 
         {/* Attendance Table */}
         {attendance.length > 0 ? (

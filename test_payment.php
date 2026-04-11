@@ -8,7 +8,7 @@ $data = [
     'phone' => '01712345678'
 ];
 
-$ch = curl_init('http://localhost/Database_Project/university-management-sysstem/backend/payment/process');
+$ch = curl_init('http://localhost/SD_Project/university-management-sysstem/backend/payment/process');
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);

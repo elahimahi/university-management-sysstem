@@ -202,11 +202,17 @@ try {
 
     // Try to create admin notification (non-blocking - won't fail payment if notification fails)
     try {
-        $notify_stmt = $pdo->prepare('
-            INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ');
-        $notify_stmt->execute([$student_id, $fee_id, $amount_paid, strtolower($payment_method), $notification_description, 'unread']);
+        // Check if notification already exists for this transaction
+        $checkNotifyStmt = $pdo->prepare('SELECT id FROM admin_notifications WHERE student_id = ? AND fee_id = ? AND amount = ? AND payment_method = ?');
+        $checkNotifyStmt->execute([$student_id, $fee_id, $amount_paid, strtolower($payment_method)]);
+        
+        if (!$checkNotifyStmt->fetch()) {
+            $notify_stmt = $pdo->prepare('
+                INSERT INTO admin_notifications (student_id, fee_id, amount, payment_method, fee_description, status)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ');
+            $notify_stmt->execute([$student_id, $fee_id, $amount_paid, strtolower($payment_method), $notification_description, 'unread']);
+        }
     } catch (Exception $notifyError) {
         // Log but don't fail payment if notification insertion fails
         error_log("Admin notification creation failed: " . $notifyError->getMessage());

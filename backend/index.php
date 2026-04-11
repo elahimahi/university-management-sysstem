@@ -10,8 +10,31 @@
  */
 
 // Enable CORS for all requests - CRITICAL ORDER
+// Set response code first
 http_response_code(200);
-header("Access-Control-Allow-Origin: *", true);
+
+// Get the origin
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+
+// List of allowed origins
+$allowed_origins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://localhost',
+    'http://127.0.0.1'
+];
+
+// Set CORS headers properly - MUST specify origin when using credentials
+if (in_array($origin, $allowed_origins)) {
+    header('Access-Control-Allow-Origin: ' . $origin, true);
+} else if (!empty($origin)) {
+    header('Access-Control-Allow-Origin: ' . $origin, true);
+} else {
+    header('Access-Control-Allow-Origin: http://localhost:3000', true);
+}
+
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH", true);
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Origin, Accept", true);
 header("Access-Control-Allow-Credentials: true", true);
@@ -29,7 +52,7 @@ $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 // Strip the base path for Apache
-$basePath = '/Database_Project/university-management-sysstem/backend';
+$basePath = '/SD_Project/university-management-sysstem/backend';
 if (strpos($requestUri, $basePath) === 0) {
     $requestUri = substr($requestUri, strlen($basePath));
 }
@@ -98,6 +121,10 @@ try {
             require_once 'student/get_student_overview.php';
         } elseif ($action === 'stats' && $requestMethod === 'GET') {
             require_once 'student/student_stats.php';
+        } elseif ($action === 'notifications' && $requestMethod === 'GET') {
+            require_once 'student/get_notifications.php';
+        } elseif ($action === 'notifications' && $requestMethod === 'POST') {
+            require_once 'student/mark_notification_read.php';
         } elseif ($action === 'assignments' && $requestMethod === 'GET') {
             require_once 'student/get_course_assignments.php';
         } elseif ($action === 'submit-assignment' && $requestMethod === 'POST') {
@@ -160,6 +187,12 @@ try {
             require_once 'records/records.php';
         }
     }
+    // Table Routes
+    elseif ($controller === 'table') {
+        if ($requestMethod === 'GET') {
+            require_once 'table/get_table.php';
+        }
+    }
     // Admin Routes
     elseif ($controller === 'admin') {
         if ($action === 'init-demo' && $requestMethod === 'POST') {
@@ -168,9 +201,9 @@ try {
             require_once 'admin/get_all_users.php';
         } elseif ($action === 'delete-user' && $requestMethod === 'DELETE') {
             require_once 'admin/delete_user.php';
-        } elseif ($action === 'approve-user' && $requestMethod === 'POST') {
+        } elseif (($action === 'approve-user' || $action === 'approve_user') && $requestMethod === 'POST') {
             require_once 'admin/approve_user.php';
-        } elseif ($action === 'reject-user' && $requestMethod === 'POST') {
+        } elseif (($action === 'reject-user' || $action === 'reject_user') && $requestMethod === 'POST') {
             require_once 'admin/reject_user.php';
         } elseif ($action === 'get-pending-registrations' && $requestMethod === 'GET') {
             require_once 'admin/get_pending_registrations.php';
@@ -192,6 +225,8 @@ try {
             require_once 'admin/send_deadline_reminders.php';
         } elseif ($action === 'run-fee-batch-job' && $requestMethod === 'POST') {
             require_once 'admin/run_fee_batch_job.php';
+        } elseif ($action === 'check-overdue-fees' && $requestMethod === 'POST') {
+            require_once 'admin/check_overdue_fees.php';
         } elseif ($action === 'courses' && $requestMethod === 'GET') {
             require_once 'admin/get_all_courses.php';
         } elseif ($action === 'create-course' && $requestMethod === 'POST') {
@@ -202,13 +237,14 @@ try {
             require_once 'admin/delete_course.php';
         } elseif ($action === 'courses-stats' && $requestMethod === 'GET') {
             require_once 'admin/get_courses_stats.php';
-<<<<<<< HEAD
         } elseif ($action === 'notifications' && $requestMethod === 'GET') {
             require_once 'admin/get_notifications.php';
         } elseif ($action === 'mark-notification-read' && $requestMethod === 'POST') {
             require_once 'admin/mark_notification_read.php';
-=======
->>>>>>> dev
+        } elseif ($action === 'live-activity' && $requestMethod === 'GET') {
+            require_once 'admin/live_activity.php';
+        } elseif ($action === 'fix-user-statuses' && $requestMethod === 'POST') {
+            require_once 'admin/fix_user_statuses.php';
         }
     }
     // Payment Routes
@@ -296,7 +332,9 @@ try {
                     'GET /student/deadlines',
                     'GET /student/progress',
                     'POST /student/progress',
-                    'GET /student/overview'
+                    'GET /student/overview',
+                    'GET /student/notifications',
+                    'POST /student/notifications/read'
                 ],
                 'Courses' => [
                     'GET /courses/available'
@@ -315,6 +353,9 @@ try {
                 ],
                 'Records' => [
                     'GET /records/all'
+                ],
+                'Table' => [
+                    'GET /table/{table_name}'
                 ],
                 'Admin' => [
                     'GET /admin/notifications',

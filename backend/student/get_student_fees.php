@@ -51,28 +51,32 @@ try {
 
     foreach ($feesRaw as $fee) {
         $due = new DateTime($fee['due_date']);
+        $remaining_amount = max(0, (float)$fee['amount'] - (float)$fee['total_paid']);
         $current_status = 'pending';
 
-        if ($fee['status'] === 'paid') {
+        if ($remaining_amount <= 0) {
             $current_status = 'paid';
-        } elseif ($fee['status'] === 'pending') {
-            if ($due < $today) {
-                $current_status = 'overdue';
-                $overdue_count++;
-            } elseif ($due->format('Y-m-d') === $today->format('Y-m-d')) {
-                $current_status = 'due';
-                $total_pending += $fee['amount'];
-            } else {
-                $current_status = 'pending';
-                $total_pending += $fee['amount'];
-            }
+        } elseif ($due < $today) {
+            $current_status = 'overdue';
+            $overdue_count++;
+            $total_pending += $remaining_amount;
+        } elseif ($due->format('Y-m-d') === $today->format('Y-m-d')) {
+            $current_status = 'due';
+            $total_pending += $remaining_amount;
+        } else {
+            $current_status = 'pending';
+            $total_pending += $remaining_amount;
         }
 
-        $fees[] = array_merge($fee, ['current_status' => $current_status]);
+        $fees[] = array_merge($fee, [
+            'current_status' => $current_status,
+            'remaining_amount' => $remaining_amount,
+            'paid_amount' => (float)$fee['total_paid']
+        ]);
 
         $total_paid += (float)$fee['total_paid'];
-        if ($fee['status'] === 'pending') {
-            $total_due += (float)$fee['amount'];
+        if ($remaining_amount > 0) {
+            $total_due += $remaining_amount;
         }
     }
 

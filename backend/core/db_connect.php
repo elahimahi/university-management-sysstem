@@ -2,15 +2,6 @@
 // CORS headers are now set in index.php
 // This file only handles database connection
 
-<<<<<<< HEAD
-    if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-        http_response_code(200);
-        exit();
-    }
-}
-
-=======
->>>>>>> dev
 $host = 'DESKTOP-83A2G7T\SQLEXPRESS';
 $db   = 'university_db';
 
@@ -29,4 +20,3 @@ try {
      echo json_encode(['error' => 'Database connection failed: ' . $e->getMessage()]);
      exit;
 }
-?>

@@ -2,12 +2,15 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import StatsCard from '../../components/ui/StatsCard';
 import Tabs from '../../components/ui/Tabs';
 import Breadcrumbs from '../../components/ui/Breadcrumbs';
 import { API_BASE_URL } from '../../constants/app.constants';
-import { UserCog, Database, Settings, Users, BookOpen, BarChart2, ShieldCheck, FileText, RefreshCw, Bell, Key, Activity, LifeBuoy, Server, Lock, DollarSign, ArrowRight, CreditCard } from 'lucide-react';
+import { getAccessToken } from '../../utils/auth.utils';
+import { UserCog, Database, Settings, Users, BookOpen, BarChart2, ShieldCheck, FileText, RefreshCw, Bell, Key, Activity, LifeBuoy, Server, Lock, DollarSign, ArrowRight, CreditCard, AlertCircle } from 'lucide-react';
 import UserManagement from './UserManagement';
+import InactiveStudentsNotification from '../../components/admin/InactiveStudentsNotification';
 
 
 const AdminDashboard: React.FC = () => {
@@ -24,6 +27,7 @@ const AdminDashboard: React.FC = () => {
   });
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [pendingFees, setPendingFees] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -63,6 +67,43 @@ const AdminDashboard: React.FC = () => {
     fetchDashboardData();
   }, []);
 
+  // Fetch pending fees every 5 seconds for live updates
+  useEffect(() => {
+    const fetchPendingFees = async () => {
+      try {
+        const token = getAccessToken();
+        console.log('🔑 Token:', token ? 'Present' : 'Missing');
+        
+        const response = await axios.get(`${API_BASE_URL}/admin/fees`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const allFees = response.data.fees || [];
+        console.log('📊 All fees from API:', allFees.length);
+        
+        // Filter only unpaid fees (pending, due, or overdue status + no payments made)
+        const pending = allFees.filter((fee: any) => {
+          const isUnpaid = (fee.current_status === 'pending' || fee.current_status === 'overdue' || fee.current_status === 'due') 
+                          && (!fee.total_paid || fee.total_paid === 0);
+          if (isUnpaid) {
+            console.log(`✓ Unpaid: ${fee.first_name} ${fee.last_name} - ৳${fee.amount} (${fee.current_status})`);
+          }
+          return isUnpaid;
+        });
+        
+        console.log('⏳ Pending fees:', pending.length);
+        setPendingFees(pending);
+      } catch (error: any) {
+        console.error('❌ Error fetching pending fees:', error.message);
+        console.error('Response:', error.response?.data);
+      }
+    };
+
+    fetchPendingFees();
+    const interval = setInterval(fetchPendingFees, 5000); // Update every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   const stats: import('../../components/ui/StatsCard').StatsCardProps[] = [
     { title: 'Total Users', value: statsData.totalUsers, icon: <Users />, color: 'gold' },
     { title: 'Students', value: statsData.totalStudents, icon: <UserCog />, color: 'success' },
@@ -80,6 +121,12 @@ const AdminDashboard: React.FC = () => {
       label: 'User Management',
       icon: <Users />,
       content: <UserManagement />,
+    },
+    {
+      id: 'inactive',
+      label: 'Inactive Students',
+      icon: <AlertCircle />,
+      content: <InactiveStudentsNotification />,
     },
     {
       id: 'fees',
@@ -375,6 +422,94 @@ const AdminDashboard: React.FC = () => {
           </div>
 
       <div className="mt-12 px-4 md:px-0 border-t border-gray-700/30"></div>
+
+      {/* Live Pending Fees Section */}
+      <div className="mt-8 px-4 md:px-0">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+            <h2 className="text-3xl font-bold text-white">Live Pending Fees</h2>
+            <span className="text-sm text-blue-400 bg-blue-500/20 px-3 py-1 rounded-full">
+              {pendingFees.length} Pending
+            </span>
+          </div>
+
+          {pendingFees.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {pendingFees.slice(0, 6).map((fee: any, index: number) => (
+                <motion.div
+                  key={fee.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05, duration: 0.3 }}
+                  whileHover={{ y: -4 }}
+                  className="p-4 rounded-xl border-2 border-blue-500/40 bg-gradient-to-br from-blue-500/20 via-blue-600/10 to-cyan-500/20 hover:border-blue-400/60 transition-all shadow-lg hover:shadow-blue-500/30"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="font-bold text-lg text-white">
+                        {fee.first_name} {fee.last_name}
+                      </p>
+                      <p className="text-xs text-blue-300/80">{fee.email}</p>
+                    </div>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                      className="w-8 h-8 rounded-full bg-blue-500/30 flex items-center justify-center"
+                    >
+                      <span className="text-lg">⏳</span>
+                    </motion.div>
+                  </div>
+
+                  <div className="h-px bg-gradient-to-r from-blue-500/0 via-blue-500/30 to-blue-500/0 my-3"></div>
+
+                  <div className="space-y-2 mb-3">
+                    <p className="text-xs text-gray-300">{fee.description}</p>
+                    <p className="text-2xl font-black text-blue-300">
+                      ৳{fee.amount.toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-gray-300">
+                    <span>Due: {new Date(fee.due_date).toLocaleDateString()}</span>
+                    <motion.div
+                      animate={{ opacity: [1, 0.5, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="text-blue-400 font-semibold"
+                    >
+                      Pending
+                    </motion.div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="p-8 rounded-xl border-2 border-dashed border-gray-600 bg-gray-800/30 text-center mb-8"
+            >
+              <div className="text-4xl mb-3">✓</div>
+              <p className="text-white font-semibold">All fees paid!</p>
+              <p className="text-gray-400 text-sm mt-2">No pending fees at the moment</p>
+            </motion.div>
+          )}
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate('/admin/fees')}
+            className="mb-8 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-bold rounded-lg transition-all shadow-lg shadow-blue-500/30"
+          >
+            <DollarSign className="w-5 h-5" />
+            View All Pending Fees
+            <ArrowRight className="w-4 h-4" />
+          </motion.button>
+        </div>
+      </div>
+
+      <div className="mt-12 px-4 md:px-0 border-t border-gray-700/30"></div>
+      
       <div className="mt-8 px-4 md:px-0">
         <div className="text-center mb-6">
           <h2 className="text-3xl font-bold text-white mb-2">Management Center</h2>

@@ -39,6 +39,7 @@ try {
             c.credits,
             c.category,
             c.level,
+            c.semester,
             (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id AND status = 'active') as students_count
         FROM courses c
         WHERE c.instructor_id = :faculty_id

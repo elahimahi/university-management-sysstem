@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 import { 
   Users, 
   BookOpen, 
@@ -15,6 +16,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../constants/app.constants';
 import { useAuth } from '../../contexts/AuthContext';
+import { getAccessToken } from '../../utils/auth.utils';
 
 interface DashboardStats {
   totalUsers: number;
@@ -50,6 +52,7 @@ const SuperAdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [pendingFees, setPendingFees] = useState<any[]>([]);
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -92,9 +95,42 @@ const SuperAdminDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    const refreshInterval = setInterval(fetchDashboardData, 30000);
-    return () => clearInterval(refreshInterval);
   }, [fetchDashboardData]);
+
+  // Fetch pending fees once on mount
+  useEffect(() => {
+    const fetchPendingFees = async () => {
+      try {
+        const token = getAccessToken();
+        console.log('🔑 Token:', token ? 'Present' : 'Missing');
+        
+        const response = await axios.get(`${API_BASE_URL}/admin/fees`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const allFees = response.data.fees || [];
+        console.log('📊 All fees from API:', allFees.length);
+        
+        // Filter only unpaid fees (pending, due, or overdue status + no payments made)
+        const pending = allFees.filter((fee: any) => {
+          const isUnpaid = (fee.current_status === 'pending' || fee.current_status === 'overdue' || fee.current_status === 'due') 
+                          && (!fee.total_paid || fee.total_paid === 0);
+          if (isUnpaid) {
+            console.log(`✓ Unpaid: ${fee.first_name} ${fee.last_name} - ৳${fee.amount} (${fee.current_status})`);
+          }
+          return isUnpaid;
+        });
+        
+        console.log('⏳ Pending fees:', pending.length);
+        setPendingFees(pending);
+      } catch (error: any) {
+        console.error('❌ Error fetching pending fees:', error.message);
+        console.error('Response:', error.response?.data);
+      }
+    };
+
+    fetchPendingFees();
+  }, []);
 
   const StatCard = ({ 
     icon: Icon, 
@@ -275,7 +311,7 @@ const SuperAdminDashboard: React.FC = () => {
                   whileHover={{ scale: 1.05 }}
                   className="rounded-full border border-cyan-400/40 bg-cyan-500/10 backdrop-blur-md px-5 py-2.5 text-xs font-bold uppercase tracking-[0.24em] text-cyan-200 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/20 transition-colors"
                 >
-                  ✨ Live updates every 30s
+                  ✨ Manual refresh only
                 </motion.span>
                 <motion.span 
                   whileHover={{ scale: 1.05 }}
@@ -293,21 +329,6 @@ const SuperAdminDashboard: React.FC = () => {
               transition={{ duration: 0.7, delay: 0.3 }}
               className="grid grid-cols-1 gap-4 sm:grid-cols-3 w-full lg:w-auto"
             >
-              <motion.div 
-                whileHover={{ scale: 1.05, y: -4 }}
-                className="relative overflow-hidden rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-cyan-900/40 to-blue-900/40 p-6 text-center shadow-2xl backdrop-blur-md"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent" />
-                <p className="relative text-xs font-bold text-cyan-300/80 uppercase tracking-wider">Refresh Rate</p>
-                <motion.p 
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="relative mt-4 text-3xl font-black text-cyan-200"
-                >
-                  Every 30s
-                </motion.p>
-              </motion.div>
-
               <motion.div 
                 whileHover={{ scale: 1.05, y: -4 }}
                 className="relative overflow-hidden rounded-2xl border border-violet-400/30 bg-gradient-to-br from-violet-900/40 to-purple-900/40 p-6 text-center shadow-2xl backdrop-blur-md"
@@ -713,10 +734,10 @@ const SuperAdminDashboard: React.FC = () => {
                       >
                         <Bell className="w-7 h-7 text-blue-300" />
                       </motion.div>
-                      Payment Notifications
+                      Admin Notifications
                     </h3>
                     <p className="text-blue-200/80 text-sm mt-2">
-                      Real-time payment notifications from students. Only SuperAdmins can view payment activity.
+                      Real-time alerts for payments and pending account approvals. Only SuperAdmins can view this feed.
                     </p>
                   </motion.div>
 
@@ -729,6 +750,83 @@ const SuperAdminDashboard: React.FC = () => {
                     {React.createElement(require('../../components/admin/AdminNotifications').default)}
                   </motion.div>
                 </div>
+
+                {/* Live Pending Fees Section */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.5 }}
+                  className="mt-8"
+                >
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                    <h2 className="text-2xl font-bold text-white">Live Pending Fees</h2>
+                    <span className="text-xs text-blue-400 bg-blue-500/20 px-3 py-1 rounded-full">
+                      {pendingFees.length} Pending
+                    </span>
+                  </div>
+
+                  {pendingFees.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {pendingFees.slice(0, 6).map((fee: any, index: number) => (
+                        <motion.div
+                          key={fee.id}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.05, duration: 0.3 }}
+                          whileHover={{ y: -4 }}
+                          className="p-4 rounded-xl border-2 border-blue-500/40 bg-gradient-to-br from-blue-500/20 via-blue-600/10 to-cyan-500/20 hover:border-blue-400/60 transition-all shadow-lg hover:shadow-blue-500/30"
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <p className="font-bold text-lg text-white">
+                                {fee.first_name} {fee.last_name}
+                              </p>
+                              <p className="text-xs text-blue-300/80">{fee.email}</p>
+                            </div>
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 3, repeat: Infinity }}
+                              className="w-8 h-8 rounded-full bg-blue-500/30 flex items-center justify-center"
+                            >
+                              <span className="text-lg">⏳</span>
+                            </motion.div>
+                          </div>
+
+                          <div className="h-px bg-gradient-to-r from-blue-500/0 via-blue-500/30 to-blue-500/0 my-3"></div>
+
+                          <div className="space-y-2 mb-3">
+                            <p className="text-xs text-gray-300">{fee.description}</p>
+                            <p className="text-2xl font-black text-blue-300">
+                              ৳{fee.amount.toLocaleString()}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs text-gray-300">
+                            <span>Due: {new Date(fee.due_date).toLocaleDateString()}</span>
+                            <motion.div
+                              animate={{ opacity: [1, 0.5, 1] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                              className="text-blue-400 font-semibold"
+                            >
+                              Pending
+                            </motion.div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="p-8 rounded-xl border-2 border-dashed border-gray-600 bg-gray-800/30 text-center"
+                    >
+                      <div className="text-4xl mb-3">✓</div>
+                      <p className="text-white font-semibold">All fees paid!</p>
+                      <p className="text-gray-400 text-sm mt-2">No pending fees at the moment</p>
+                    </motion.div>
+                  )}
+                </motion.div>
               </motion.div>
           </>
         )}

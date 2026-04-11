@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test - University Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #f0f8f4;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #fdf4f4;
+            color: #dc3545;
+        }
+        .status-line {
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .loading {
+            color: #ff9800;
+        }
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 CORS Test - Login Endpoint</h1>
+        
+        <p>This tool tests if your CORS configuration is working correctly.</p>
+        
+        <div>
+            <h3>Test Options</h3>
+            <button onclick="testPreflight()">1️⃣ Test Preflight (OPTIONS)</button>
+            <button onclick="testLogin()">2️⃣ Test Login (POST)</button>
+            <button onclick="testBoth()">3️⃣ Test Full Flow</button>
+            <button onclick="clearResult()">🗑️ Clear</button>
+        </div>
+        
+        <div id="result" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        function log(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            
+            if (message === '__CLEAR__') {
+                resultDiv.innerHTML = '';
+                return;
+            }
+            
+            const line = document.createElement('div');
+            line.textContent = message;
+            resultDiv.appendChild(line);
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        }
+
+        function clearResult() {
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        async function testPreflight() {
+            clearResult();
+            log('📤 Testing OPTIONS (Preflight) request...');
+            log('⏳ Waiting for response...', true);
+            
+            try {
+                const response = await fetch('http://localhost/SD_Project/university-management-sysstem/backend/auth/login', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:3001',
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type',
+                    }
+                });
+                
+                log('✅ Preflight Response Status: ' + response.status);
+                log('\n📋 Response Headers:');
+                log('  Access-Control-Allow-Origin: ' + response.headers.get('Access-Control-Allow-Origin'));
+                log('  Access-Control-Allow-Methods: ' + response.headers.get('Access-Control-Allow-Methods'));
+                log('  Access-Control-Allow-Headers: ' + response.headers.get('Access-Control-Allow-Headers'));
+                log('  Access-Control-Allow-Credentials: ' + response.headers.get('Access-Control-Allow-Credentials'));
+                
+                if (response.status === 200) {
+                    log('\n✅ PREFLIGHT TEST PASSED!');
+                }
+            } catch (error) {
+                log('\n❌ ERROR: ' + error.message, true);
+                log('This might mean:');
+                log('  - Backend is not running');
+                log('  - CORS headers are not being sent');
+                log('  - URL path is incorrect');
+            }
+        }
+
+        async function testLogin() {
+            clearResult();
+            log('📤 Testing POST request with credentials...');
+            log('⏳ Waiting for response...', true);
+            
+            try {
+                const response = await fetch('http://localhost/SD_Project/university-management-sysstem/backend/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': 'http://localhost:3001'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email: 'student@example.com',
+                        password: 'password123',
+                        role: 'student'
+                    })
+                });
+                
+                log('✅ Response Status: ' + response.status);
+                log('\n📋 Response Headers:');
+                log('  Access-Control-Allow-Origin: ' + response.headers.get('Access-Control-Allow-Origin'));
+                log('  Access-Control-Allow-Credentials: ' + response.headers.get('Access-Control-Allow-Credentials'));
+                
+                const data = await response.json();
+                log('\n📦 Response Body:');
+                log(JSON.stringify(data, null, 2));
+                
+                if (response.status === 200 && !data.error) {
+                    log('\n✅ LOGIN TEST PASSED!');
+                }
+            } catch (error) {
+                log('\n❌ ERROR: ' + error.message, true);
+            }
+        }
+
+        async function testBoth() {
+            await testPreflight();
+            log('\n' + '='.repeat(50) + '\n');
+            await testLogin();
+        }
+
+        // Show welcome message
+        log('🎯 CORS Test Tool Ready');
+        log('Backend URL: http://localhost/SD_Project/university-management-sysstem/backend');
+        log('Frontend URL: http://localhost:3001');
+        log('\nClick a button above to start testing.');
+    </script>
+</body>
+</html>

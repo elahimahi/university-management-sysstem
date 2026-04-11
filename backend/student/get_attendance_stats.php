@@ -4,8 +4,8 @@
  * GET /student/attendance-stats?course_id=1
  */
 
+require_once __DIR__ . '/../core/cors.php';
 require_once __DIR__ . '/../core/db_connect.php';
-header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents('php://input'), true);
 $student_id = $data['student_id'] ?? null;

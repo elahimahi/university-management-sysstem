@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { LogIn, Clock, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react';
+import { LogIn, Clock, AlertCircle, CheckCircle, TrendingUp, Lock } from 'lucide-react';
 import axios from 'axios';
 import { getAccessToken } from '../../utils/auth.utils';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface LoginActivity {
   id: number;
@@ -16,6 +17,7 @@ interface LoginActivity {
 }
 
 const FacultyLoginActivity: React.FC = () => {
+  const { user } = useAuth();
   const [activities, setActivities] = useState<LoginActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,8 +25,16 @@ const FacultyLoginActivity: React.FC = () => {
   const [sortBy, setSortBy] = useState<'last_login' | 'login_count' | 'name'>('last_login');
 
   useEffect(() => {
-    fetchLoginActivity();
-  }, []);
+    // Check if user is faculty before fetching
+    if (user && user.role === 'faculty') {
+      fetchLoginActivity();
+    } else {
+      setLoading(false);
+      if (user && user.role !== 'faculty') {
+        setError('Forbidden - Only faculty members can view student login activity');
+      }
+    }
+  }, [user]);
 
   const fetchLoginActivity = async () => {
     try {
@@ -79,8 +89,14 @@ const FacultyLoginActivity: React.FC = () => {
     );
   }
 
+  // Don't render anything if user is not faculty
+  if (error && error.includes('Forbidden')) {
+    return null;
+  }
+
   const neverLoggedIn = sortedActivities.filter((a) => !a.last_login).length;
   const loggedInToday = sortedActivities.filter((a) => a.today_logins > 0).length;
+  const hasLoggedIn = sortedActivities.length - neverLoggedIn;
 
   return (
     <div className="space-y-6">
@@ -220,12 +236,14 @@ const FacultyLoginActivity: React.FC = () => {
           <div className="flex items-center gap-2 text-green-400 font-semibold mb-2">
             <CheckCircle size={16} /> Active Students
           </div>
+          <p className="text-2xl font-bold text-green-400 mb-1">{hasLoggedIn}</p>
           <p className="text-xs text-gray-400">Have logged in at least once</p>
         </div>
         <div className="glass-panel p-4 rounded-lg border border-red-500/20 bg-red-500/5">
           <div className="flex items-center gap-2 text-red-400 font-semibold mb-2">
             <AlertCircle size={16} /> Inactive Students
           </div>
+          <p className="text-2xl font-bold text-red-400 mb-1">{neverLoggedIn}</p>
           <p className="text-xs text-gray-400">
             Have never logged in - Follow up required
           </p>

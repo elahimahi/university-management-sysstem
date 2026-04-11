@@ -29,6 +29,8 @@ try {
             amount DECIMAL(10, 2) NOT NULL,
             payment_method VARCHAR(50),
             fee_description VARCHAR(255),
+            transaction_id VARCHAR(100) NULL,
+            CONSTRAINT UQ_AdminNotifications_TransactionId UNIQUE (transaction_id),
             status VARCHAR(20) DEFAULT 'unread' CHECK (status IN ('read', 'unread')),
             created_at DATETIME2 DEFAULT GETDATE(),
             CONSTRAINT FK_AdminNotifications_Students FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,

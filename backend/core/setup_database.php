@@ -142,6 +142,8 @@ try {
         amount_paid DECIMAL(10, 2) NOT NULL,
         payment_date DATETIME2 DEFAULT GETDATE(),
         payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('bkash', 'nagad', 'rocket', 'card')),
+        transaction_id VARCHAR(100) NULL,
+        CONSTRAINT UQ_Payments_TransactionId UNIQUE (transaction_id),
         CONSTRAINT FK_Payments_Fees FOREIGN KEY (fee_id) REFERENCES fees(id) ON DELETE CASCADE
     );
 
@@ -153,13 +155,29 @@ try {
         amount DECIMAL(10, 2) NOT NULL,
         payment_method VARCHAR(50),
         fee_description VARCHAR(255),
+        transaction_id VARCHAR(100) NULL,
+        CONSTRAINT UQ_AdminNotifications_TransactionId UNIQUE (transaction_id),
         status VARCHAR(20) DEFAULT 'unread' CHECK (status IN ('read', 'unread')),
         created_at DATETIME2 DEFAULT GETDATE(),
         CONSTRAINT FK_AdminNotifications_Students FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
         CONSTRAINT FK_AdminNotifications_Fees FOREIGN KEY (fee_id) REFERENCES fees(id) ON DELETE CASCADE
     );
 
-    -- 11. Login History Table
+    -- 11. Notifications Table (for faculty and system alerts)
+    CREATE TABLE notifications (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        recipient_id INT NOT NULL,
+        recipient_role VARCHAR(20) NOT NULL,
+        actor_id INT NULL,
+        message VARCHAR(500) NOT NULL,
+        notification_type VARCHAR(50) DEFAULT 'general',
+        status VARCHAR(20) DEFAULT 'unread' CHECK (status IN ('read', 'unread')),
+        created_at DATETIME2 DEFAULT GETDATE(),
+        CONSTRAINT FK_Notifications_Recipient FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT FK_Notifications_Actor FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE NO ACTION
+    );
+
+    -- 12. Login History Table
     CREATE TABLE login_history (
         id INT IDENTITY(1,1) PRIMARY KEY,
         user_id INT NOT NULL,
@@ -185,7 +203,7 @@ try {
         'message' => 'Database schema created successfully',
         'database' => 'university_db',
         'server' => 'MAHI\SQLEXPRESS',
-        'tables_created' => 10,
+        'tables_created' => 12,
         'next_step' => 'Call /admin/init-demo to create sample data'
     ]);
 

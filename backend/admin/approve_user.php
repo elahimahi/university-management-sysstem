@@ -77,7 +77,16 @@ try {
         WHERE id = ?
     ");
     $updateStmt->execute([$adminId, $userId]);
-    
+
+    if (in_array($user['role'], ['student', 'faculty'], true)) {
+        $approvalMessage = sprintf(
+            'Your %s registration has been approved by SuperAdmin. You can now log in and continue.',
+            $user['role']
+        );
+        $notifyStmt = $pdo->prepare("INSERT INTO notifications (recipient_id, recipient_role, actor_id, message, notification_type, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $notifyStmt->execute([$userId, $user['role'], $adminId, $approvalMessage, 'registration', 'unread']);
+    }
+
     http_response_code(200);
     echo json_encode([
         'message' => 'User approved successfully',
@@ -90,7 +99,7 @@ try {
             'approval_status' => 'approved'
         ]
     ]);
-    
+
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['message' => 'Failed to approve user: ' . $e->getMessage()]);

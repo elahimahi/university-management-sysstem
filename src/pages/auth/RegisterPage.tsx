@@ -49,6 +49,9 @@ const RegisterPage: React.FC = () => {
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [registrationError, setRegistrationError] = useState<string | null>(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+
+  const isSuccessMessage = registrationSuccess || (registrationError !== null && (registrationError.includes('pending') || registrationError === 'Approved by SuperAdmin'));
 
   // Redirection if already authenticated
   React.useEffect(() => {
@@ -121,6 +124,7 @@ const RegisterPage: React.FC = () => {
       // Check if user registration is pending approval
       if (!response.user.id) {
         setRegistrationError('Registration failed. Please try again.');
+        setRegistrationSuccess(false);
         return;
       }
 
@@ -132,10 +136,10 @@ const RegisterPage: React.FC = () => {
           navigate(targetPath, { replace: true });
         }, 100);
       } else {
-        // Show pending approval message
-        setRegistrationError(
-          `Registration successful! Your account is pending superadmin approval. You will receive a notification once approved.`
-        );
+        // Show approval message for student/faculty registrations
+        setRegistrationSuccess(true);
+        setRegistrationError(response.message || 'Approved by SuperAdmin');
+
         // Redirect to login page after 3 seconds
         setTimeout(() => {
           navigate('/login', { replace: true });
@@ -297,21 +301,15 @@ const RegisterPage: React.FC = () => {
             {/* Error/Success Display */}
             {registrationError && (
               <div className={`mt-6 p-4 border rounded-xl ${
-                registrationError.includes('pending') ? 
-                  'bg-green-500/10 border-green-500/30' : 
-                  'bg-red-500/10 border-red-500/30'
+                isSuccessMessage ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'
               }`}>
                 <p className={`text-sm font-bold ${
-                  registrationError.includes('pending') ? 
-                    'text-green-400' : 
-                    'text-red-400'
+                  isSuccessMessage ? 'text-green-400' : 'text-red-400'
                 }`}>
-                  {registrationError.includes('pending') ? '✅ Success' : '❌ Error'}
+                  {isSuccessMessage ? '✅ Success' : '❌ Error'}
                 </p>
                 <p className={`text-xs mt-1 ${
-                  registrationError.includes('pending') ? 
-                    'text-green-300' : 
-                    'text-red-300'
+                  isSuccessMessage ? 'text-green-300' : 'text-red-300'
                 }`}>{registrationError}</p>
                 {registrationError.includes('Admin') && (
                   <p className="text-red-300 text-xs mt-2">💡 Tip: Only one admin account can be registered. Contact your administrator if you need admin access.</p>

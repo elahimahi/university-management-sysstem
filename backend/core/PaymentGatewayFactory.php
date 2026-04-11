@@ -5,7 +5,6 @@
  */
 
 require_once __DIR__ . '/SSLCommerzGateway.php';
-// Add other gateways here as needed
 
 class PaymentGatewayFactory {
     private $pdo;
@@ -28,4 +27,3 @@ class PaymentGatewayFactory {
         }
     }
 }
-?>

@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api.service';
 import { Button } from '../../components/common';
 import toast from 'react-hot-toast';
+import {
+  BookOpen,
+  Plus,
+  Clock,
+  Award,
+  Users,
+  X,
+  ArrowRight,
+  Zap,
+  Star,
+  CheckCircle2,
+} from 'lucide-react';
 
 interface Course {
   id: number;
@@ -11,18 +24,22 @@ interface Course {
   credits: number;
   category?: string;
   level?: string;
+  semester?: string;
 }
 
 const FacultyCoursesPage: React.FC = () => {
+  const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     code: '',
     name: '',
     credits: 3,
     category: '',
-    level: ''
+    level: '',
+    semester: 'Fall 2024'
   });
 
   useEffect(() => {
@@ -52,9 +69,13 @@ const FacultyCoursesPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form data
     if (!formData.code.trim() || !formData.name.trim()) {
       toast.error('Course code and name are required');
+      return;
+    }
+
+    if (!formData.semester || !formData.semester.trim()) {
+      toast.error('Please select a semester for the course');
       return;
     }
 
@@ -64,12 +85,14 @@ const FacultyCoursesPage: React.FC = () => {
     }
 
     try {
+      setIsSubmitting(true);
       const response = await apiService.post<{ status: string; message?: string; course?: Course }>('/faculty/courses', formData);
       if (response.status === 'success') {
         setCourses([...courses, response.course!]);
-        setFormData({ code: '', name: '', credits: 3, category: '', level: '' });
+        setFormData({ code: '', name: '', credits: 3, category: '', level: '', semester: 'Fall 2024' });
         setShowForm(false);
-        toast.success('Course added successfully');
+        const facultyName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Faculty';
+        toast.success(`${facultyName}: Course added successfully!`);
       } else {
         toast.error(response.message || 'Failed to add course');
       }
@@ -77,6 +100,8 @@ const FacultyCoursesPage: React.FC = () => {
       console.error('Error adding course:', error);
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to add course';
       toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -88,141 +113,392 @@ const FacultyCoursesPage: React.FC = () => {
     }));
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6 },
+    },
+  };
+
+  const totalCredits = courses.reduce((sum, c) => sum + Number(c.credits || 0), 0);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-navy-900 p-8 flex items-center justify-center">
-        <div className="text-lg">Loading courses...</div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+            className="mb-6"
+          >
+            <BookOpen className="w-16 h-16 text-cyan-400 mx-auto" />
+          </motion.div>
+          <motion.div
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-white text-2xl font-bold"
+          >
+            Loading your courses...
+          </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-navy-950 dark:via-navy-900 dark:to-navy-850 p-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
+      className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 p-4 md:p-8"
     >
-      <div className="max-w-7xl mx-auto mb-10">
-        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-indigo-700 via-sky-600 to-cyan-500 p-8 shadow-[0_35px_120px_rgba(14,165,233,0.18)] mb-8">
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute -left-20 -bottom-10 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-cyan-100/90 mb-3">Faculty dashboard</p>
-              <h1 className="text-4xl lg:text-5xl font-extrabold text-white">My Courses</h1>
-              <p className="mt-4 max-w-2xl text-white/85 text-base lg:text-lg">
-                Beautiful course overview with animated cards, instant course creation, and quick access to your teaching roster.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row items-stretch sm:items-center">
-              <Button onClick={() => setShowForm(!showForm)} className="min-w-[12rem]" variant="primary">
-                {showForm ? 'Cancel' : 'Add Course'}
-              </Button>
-              <div className="rounded-3xl border border-white/20 bg-white/10 px-5 py-4 text-white shadow-xl backdrop-blur-xl">
-                <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/80">Courses</p>
-                <p className="mt-2 text-3xl font-semibold">{courses.length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Animated background blobs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ y: [0, -30, 0], x: [0, 20, 0] }}
+          transition={{ duration: 12, repeat: Infinity }}
+          className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 blur-3xl"
+        />
+        <motion.div
+          animate={{ y: [0, 30, 0], x: [0, -20, 0] }}
+          transition={{ duration: 14, repeat: Infinity }}
+          className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-gradient-to-tr from-purple-500/20 to-pink-500/20 blur-3xl"
+        />
       </div>
 
-      {showForm && (
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Hero Header */}
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="mb-8 p-6 bg-white/90 dark:bg-navy-900/90 rounded-[2rem] border border-slate-200 dark:border-navy-700 shadow-[0_30px_80px_rgba(15,23,42,0.08)]"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="mb-12"
         >
-          <h2 className="text-xl font-semibold mb-4">Add New Course</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Course Code</label>
-                <input
-                  type="text"
-                  name="code"
-                  value={formData.code}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-2 border rounded"
-                  placeholder="e.g., CS101"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Course Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-2 border rounded"
-                  placeholder="e.g., Introduction to Computer Science"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Credits</label>
-                <select
-                  name="credits"
-                  value={formData.credits}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border rounded"
-                >
-                  {[1,2,3,4,5,6].map(num => (
-                    <option key={num} value={num}>{num}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
-                <input
-                  type="text"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border rounded"
-                  placeholder="e.g., Core, Elective"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Level</label>
-                <input
-                  type="text"
-                  name="level"
-                  value={formData.level}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border rounded"
-                  placeholder="e.g., Undergraduate, Graduate"
-                />
-              </div>
+          <motion.div variants={itemVariants} className="flex items-center gap-4 mb-6">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+            >
+              <BookOpen className="w-12 h-12 text-cyan-400" />
+            </motion.div>
+            <div>
+              <p className="text-cyan-300 font-semibold text-sm uppercase tracking-widest">Faculty Dashboard</p>
+              <h1 className="text-5xl md:text-6xl font-black text-white mt-2">My Courses</h1>
             </div>
-            <Button type="submit">Add Course</Button>
-          </form>
-        </motion.div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses?.map((course) => (
-          <motion.div
-            key={course.id}
-            whileHover={{ y: -4, scale: 1.02 }}
-            transition={{ duration: 0.25 }}
-            className="rounded-[2rem] border border-slate-200 bg-white/90 dark:bg-navy-900/90 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.08)] hover:shadow-[0_30px_90px_rgba(15,23,42,0.15)] transition-all"
-          >
-            <h2 className="text-xl font-semibold mb-2">{course.name}</h2>
-            <p className="text-md text-gray-600 dark:text-gray-300 mb-2">Code: {course.code}</p>
-            <p className="text-md text-gray-600 dark:text-gray-300 mb-2">Credits: {course.credits}</p>
-            {course.category && <p className="text-md text-gray-600 dark:text-gray-300 mb-2">Category: {course.category}</p>}
-            {course.level && <p className="text-md text-gray-600 dark:text-gray-300">Level: {course.level}</p>}
           </motion.div>
-        ))}
-        {courses.length === 0 && (
-          <div className="col-span-full text-center py-12">
-            <p className="text-lg text-gray-500 dark:text-gray-400">No courses found. Add your first course above.</p>
-          </div>
+          <motion.p variants={itemVariants} className="text-cyan-200/80 text-lg max-w-3xl">
+            Create and manage your courses with an intuitive interface. Add new courses, organize by category, and track your teaching roster.
+          </motion.p>
+        </motion.div>
+
+        {/* Stats Cards */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12"
+        >
+          {[
+            { icon: BookOpen, label: 'Total Courses', value: courses.length, color: 'from-blue-500 to-blue-600' },
+            { icon: Clock, label: 'Credits Teaching', value: totalCredits, color: 'from-purple-500 to-purple-600' },
+            { icon: Zap, label: 'Active Status', value: 'Ready', color: 'from-emerald-500 to-emerald-600' },
+          ].map((stat, idx) => (
+            <motion.div
+              key={idx}
+              variants={itemVariants}
+              whileHover={{ translateY: -8, scale: 1.02 }}
+              className="group relative"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-300`} />
+              <div className="relative bg-slate-900/80 backdrop-blur border border-slate-700 rounded-2xl p-6 flex items-center gap-4">
+                <div className={`bg-gradient-to-br ${stat.color} p-4 rounded-xl`}>
+                  <stat.icon className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-white text-3xl font-bold">{stat.value}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Add Course Button */}
+        <motion.div
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+          className="mb-8"
+        >
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowForm(!showForm)}
+            className="relative group w-full md:w-auto"
+          >
+            <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-300" />
+            <div className="relative px-8 py-4 bg-slate-900 rounded-2xl flex items-center justify-center gap-3 font-bold text-white hover:bg-slate-800 transition">
+              {showForm ? (
+                <>
+                  <X className="w-5 h-5" />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5" />
+                  Add New Course
+                </>
+              )}
+            </div>
+          </motion.button>
+        </motion.div>
+
+        {/* Course Form */}
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -20 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+              className="mb-12"
+            >
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/50 to-blue-500/50 rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-300" />
+                <div className="relative bg-slate-900/90 backdrop-blur border border-slate-700 rounded-3xl p-8 shadow-2xl">
+                  <h2 className="text-3xl font-bold text-white mb-6">Create New Course</h2>
+                  
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Course Code */}
+                      <motion.div whileHover={{ scale: 1.02 }}>
+                        <label className="block text-sm font-semibold text-cyan-300 uppercase tracking-wider mb-3">
+                          Course Code *
+                        </label>
+                        <input
+                          type="text"
+                          name="code"
+                          value={formData.code}
+                          onChange={handleInputChange}
+                          required
+                          placeholder="e.g., CS101"
+                          className="w-full px-5 py-3 bg-slate-800 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none"
+                        />
+                      </motion.div>
+
+                      {/* Course Name */}
+                      <motion.div whileHover={{ scale: 1.02 }}>
+                        <label className="block text-sm font-semibold text-cyan-300 uppercase tracking-wider mb-3">
+                          Course Name *
+                        </label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          required
+                          placeholder="e.g., Introduction to Programming"
+                          className="w-full px-5 py-3 bg-slate-800 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none"
+                        />
+                      </motion.div>
+
+                      {/* Credits */}
+                      <motion.div whileHover={{ scale: 1.02 }}>
+                        <label className="block text-sm font-semibold text-cyan-300 uppercase tracking-wider mb-3">
+                          Credits (1-6)
+                        </label>
+                        <select
+                          name="credits"
+                          value={formData.credits}
+                          onChange={handleInputChange}
+                          className="w-full px-5 py-3 bg-slate-800 border border-slate-600 rounded-xl text-white focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none"
+                        >
+                          {[1, 2, 3, 4, 5, 6].map(num => (
+                            <option key={num} value={num}>{num} Credit{num !== 1 ? 's' : ''}</option>
+                          ))}
+                        </select>
+                      </motion.div>
+
+                      {/* Category */}
+                      <motion.div whileHover={{ scale: 1.02 }}>
+                        <label className="block text-sm font-semibold text-cyan-300 uppercase tracking-wider mb-3">
+                          Category
+                        </label>
+                        <input
+                          type="text"
+                          name="category"
+                          value={formData.category}
+                          onChange={handleInputChange}
+                          placeholder="e.g., Core, Elective, Lab"
+                          className="w-full px-5 py-3 bg-slate-800 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none"
+                        />
+                      </motion.div>
+
+                      {/* Level */}
+                      <motion.div whileHover={{ scale: 1.02 }}>
+                        <label className="block text-sm font-semibold text-cyan-300 uppercase tracking-wider mb-3">
+                          Level
+                        </label>
+                        <input
+                          type="text"
+                          name="level"
+                          value={formData.level}
+                          onChange={handleInputChange}
+                          placeholder="e.g., Undergraduate, Graduate"
+                          className="w-full px-5 py-3 bg-slate-800 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none"
+                        />
+                      </motion.div>
+
+                      {/* Semester */}
+                      <motion.div whileHover={{ scale: 1.02 }}>
+                        <label className="block text-sm font-semibold text-cyan-300 uppercase tracking-wider mb-3">
+                          Semester
+                        </label>
+                        <select
+                          name="semester"
+                          value={formData.semester}
+                          onChange={handleInputChange}
+                          className="w-full px-5 py-3 bg-slate-800 border border-slate-600 rounded-xl text-white focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none"
+                        >
+                          <option value="Fall 2024">Fall 2024</option>
+                          <option value="Spring 2025">Spring 2025</option>
+                          <option value="Summer 2025">Summer 2025</option>
+                          <option value="Fall 2025">Fall 2025</option>
+                          <option value="Spring 2026">Spring 2026</option>
+                          <option value="Summer 2026">Summer 2026</option>
+                        </select>
+                      </motion.div>
+                    </div>
+
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }}>
+                            <CheckCircle2 className="w-5 h-5" />
+                          </motion.div>
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-5 h-5" />
+                          Create Course
+                        </>
+                      )}
+                    </motion.button>
+                  </form>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Courses Grid */}
+        {courses.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-24 bg-slate-900/40 backdrop-blur border border-slate-700/50 rounded-3xl"
+          >
+            <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity }}>
+              <BookOpen className="w-20 h-20 text-slate-500 mx-auto mb-4" />
+            </motion.div>
+            <p className="text-2xl font-bold text-white mb-2">No Courses Yet</p>
+            <p className="text-slate-300">Create your first course to get started</p>
+          </motion.div>
+        ) : (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {courses.map((course, idx) => (
+              <motion.div
+                key={course.id}
+                variants={itemVariants}
+                whileHover={{ y: -12, scale: 1.02 }}
+                className="group relative h-full"
+              >
+                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-3xl opacity-0 group-hover:opacity-100 blur transition duration-300" />
+
+                <div className="relative h-full bg-slate-900/60 backdrop-blur border border-slate-700 rounded-3xl p-8 overflow-hidden">
+                  {/* Animated top bar */}
+                  <motion.div
+                    className="absolute top-0 left-0 h-1 bg-gradient-to-r from-cyan-500 to-blue-500"
+                    initial={{ width: 0 }}
+                    whileHover={{ width: '100%' }}
+                    transition={{ duration: 0.3 }}
+                  />
+
+                  {/* Course Color Indicator */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-3 h-3 rounded-full ${['bg-cyan-500', 'bg-blue-500', 'bg-purple-500', 'bg-emerald-500', 'bg-pink-500'][idx % 5]}`} />
+                    <span className="text-xs uppercase tracking-widest font-bold text-slate-400">{course.category || 'Course'}</span>
+                  </div>
+
+                  {/* Course Code Badge */}
+                  <div className="inline-block mb-4">
+                    <span className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-xs font-semibold">
+                      {course.code}
+                    </span>
+                  </div>
+
+                  {/* Course Title */}
+                  <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-cyan-300 transition line-clamp-2">
+                    {course.name}
+                  </h3>
+
+                  {/* Course Details */}
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center gap-3">
+                      <Award className="w-4 h-4 text-emerald-400" />
+                      <span className="text-slate-300 font-semibold">{course.credits} Credit{course.credits !== 1 ? 's' : ''}</span>
+                    </div>
+                    {course.level && (
+                      <div className="flex items-center gap-3">
+                        <Star className="w-4 h-4 text-yellow-400" />
+                        <span className="text-slate-300 font-semibold">{course.level}</span>
+                      </div>
+                    )}
+                    {course.semester && (
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-4 h-4 text-sky-400" />
+                        <span className="text-slate-300 font-semibold">{course.semester}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Button */}
+                  <motion.button
+                    whileHover={{ x: 4 }}
+                    className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 group/btn"
+                  >
+                    Manage Course
+                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition" />
+                  </motion.button>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
         )}
       </div>
     </motion.div>

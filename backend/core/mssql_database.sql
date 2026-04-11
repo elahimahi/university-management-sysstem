@@ -87,7 +87,6 @@ CREATE TABLE payments (
     CONSTRAINT FK_Payments_Fees FOREIGN KEY (fee_id) REFERENCES fees(id) ON DELETE CASCADE
 );
 
-<<<<<<< HEAD
 -- 8. Admin Notifications Table
 CREATE TABLE admin_notifications (
     id INT IDENTITY(1,1) PRIMARY KEY,
@@ -103,9 +102,6 @@ CREATE TABLE admin_notifications (
 );
 
 -- 9. Assignments Table
-=======
--- 8. Assignments Table
->>>>>>> dev
 CREATE TABLE assignments (
     id INT IDENTITY(1,1) PRIMARY KEY,
     enrollment_id INT NOT NULL,
@@ -168,5 +164,19 @@ CREATE TABLE course_marks (
     CONSTRAINT FK_CourseMarks_Enrollments FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE CASCADE,
     CONSTRAINT FK_CourseMarks_Courses FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
     CONSTRAINT UC_Enrollment_Course_Marks UNIQUE(enrollment_id, course_id)
+);
+
+-- 12. Notifications Table (for faculty and system alerts)
+CREATE TABLE notifications (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    recipient_id INT NOT NULL,
+    recipient_role VARCHAR(20) NOT NULL,
+    actor_id INT NULL,
+    message VARCHAR(500) NOT NULL,
+    notification_type VARCHAR(50) DEFAULT 'general',
+    status VARCHAR(20) DEFAULT 'unread' CHECK (status IN ('read', 'unread')),
+    created_at DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT FK_Notifications_Recipient FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT FK_Notifications_Actor FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE NO ACTION
 );
 

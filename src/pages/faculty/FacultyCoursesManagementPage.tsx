@@ -10,6 +10,7 @@ interface Course {
   credits: number;
   category: string;
   level: string;
+  semester: string;
   students_count: number;
 }
 
@@ -26,6 +27,7 @@ const FacultyCoursesManagementPage: React.FC = () => {
     credits: 3,
     category: 'General',
     level: 'Undergraduate',
+    semester: 'Fall 2024',
   });
 
   useEffect(() => {
@@ -64,6 +66,18 @@ const FacultyCoursesManagementPage: React.FC = () => {
       return;
     }
 
+    // Check for duplicate course in the same semester
+    const isDuplicate = courses.some(
+      course =>
+        course.code.toUpperCase() === formData.code.toUpperCase() &&
+        course.semester === formData.semester
+    );
+
+    if (isDuplicate) {
+      setError('❌ Duplicate Course not allowed');
+      return;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/faculty/create_course.php`, {
         method: 'POST',
@@ -85,11 +99,12 @@ const FacultyCoursesManagementPage: React.FC = () => {
           credits: 3,
           category: 'General',
           level: 'Undergraduate',
+          semester: 'Fall 2024',
         });
         fetchFacultyCourses();
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(data.message || 'Failed to create course');
+        setError(data.error || data.message || 'Failed to create course');
       }
     } catch (err) {
       setError('Network error while creating course');
@@ -196,6 +211,18 @@ const FacultyCoursesManagementPage: React.FC = () => {
                   <option value="Graduate">Graduate</option>
                   <option value="Certificate">Certificate</option>
                 </select>
+                <select
+                  value={formData.semester}
+                  onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+                  className="bg-slate-700/50 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-blue-500"
+                >
+                  <option value="Fall 2024">Fall 2024</option>
+                  <option value="Spring 2025">Spring 2025</option>
+                  <option value="Summer 2025">Summer 2025</option>
+                  <option value="Fall 2025">Fall 2025</option>
+                  <option value="Spring 2026">Spring 2026</option>
+                  <option value="Summer 2026">Summer 2026</option>
+                </select>
               </div>
               <button
                 type="submit"
@@ -250,6 +277,10 @@ const FacultyCoursesManagementPage: React.FC = () => {
                       <div className="flex justify-between">
                         <span className="opacity-75">Level:</span>
                         <span className="font-semibold">{course.level}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="opacity-75">Semester:</span>
+                        <span className="font-semibold">{course.semester}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="opacity-75">Category:</span>

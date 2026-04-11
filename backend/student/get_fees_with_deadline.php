@@ -15,8 +15,8 @@
  * }
  */
 
+require_once __DIR__ . '/../core/cors.php';
 require_once __DIR__ . '/../core/db_connect.php';
-header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents('php://input'), true);
 $student_id = $data['student_id'] ?? null;
@@ -42,10 +42,10 @@ try {
             f.amount - ISNULL(SUM(p.amount_paid), 0) as remaining_amount,
             DATEDIFF(HOUR, GETDATE(), f.payment_deadline) as hours_remaining,
             CASE 
-                WHEN f.payment_deadline IS NULL THEN "No deadline set"
-                WHEN GETDATE() > f.payment_deadline AND f.status = "pending" THEN "Overdue - Pay Now!"
-                WHEN DATEDIFF(HOUR, GETDATE(), f.payment_deadline) <= 24 AND f.status = "pending" THEN "Urgent - Less than 24 hours"
                 WHEN f.status = "paid" THEN "Paid"
+                WHEN f.payment_deadline IS NULL THEN "Pending"
+                WHEN GETDATE() > f.payment_deadline THEN "Overdue - Pay Now!"
+                WHEN DATEDIFF(HOUR, GETDATE(), f.payment_deadline) <= 24 THEN "Urgent - Less than 24 hours"
                 ELSE "Pending"
             END as payment_status_display,
             pc.penalty_percentage,
