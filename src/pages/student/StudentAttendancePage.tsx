@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAccessToken } from '../../utils/auth.utils';
-import { Clock, AlertCircle } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { Clock, AlertCircle, TrendingUp, BookOpen, User, Calendar } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
 
 interface AttendanceStats {
@@ -33,7 +33,7 @@ const StudentAttendancePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost/SD_Project/university-management-sysstem/backend';
 
   useEffect(() => {
     const fetchAttendanceData = async () => {
@@ -91,276 +91,362 @@ const StudentAttendancePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-navy-900 flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-cyan-400"></div>
       </div>
     );
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen bg-white dark:bg-navy-900 p-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.6 }}
+      className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 p-4 md:p-8"
     >
       <Toaster position="top-right" />
 
-      <div className="flex items-center gap-3 mb-6">
-        <Clock className="w-8 h-8 text-green-500" />
-        <h1 className="text-3xl font-bold">Attendance</h1>
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ y: [0, -30, 0], x: [0, 15, 0] }}
+          transition={{ duration: 8, repeat: Infinity }}
+          className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 blur-3xl"
+        />
+        <motion.div
+          animate={{ y: [0, 30, 0], x: [0, -15, 0] }}
+          transition={{ duration: 10, repeat: Infinity }}
+          className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-gradient-to-tr from-emerald-500/20 to-blue-500/20 blur-3xl"
+        />
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-semibold text-red-800 dark:text-red-300">Error</h3>
-            <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Enhanced Hero Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="relative overflow-hidden rounded-[2.5rem] border border-cyan-500/20 bg-gradient-to-br from-slate-900/80 via-blue-900/40 to-slate-900/80 backdrop-blur-xl p-8 md:p-12 shadow-2xl mb-12"
+        >
+          <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-cyan-500/15 blur-3xl" />
+          <div className="pointer-events-none absolute top-1/2 -left-20 h-48 w-48 rounded-full bg-blue-500/15 blur-3xl" />
+
+          <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 px-5 py-3 mb-6"
+              >
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}>
+                  <Clock className="w-5 h-5 text-cyan-300" />
+                </motion.div>
+                <span className="text-sm font-semibold text-cyan-200">Attendance Dashboard</span>
+              </motion.div>
+
+              <h1 className="text-5xl md:text-6xl font-black text-white drop-shadow-lg mb-4">
+                Your <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Attendance</span> Story
+              </h1>
+              <p className="text-slate-300 text-lg max-w-2xl leading-relaxed">
+                Track your presence across all courses with detailed analytics, visual insights, and performance trends in real-time.
+              </p>
+            </motion.div>
+
+            {/* Animated Stats Cards */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="grid gap-4 md:gap-6 sm:grid-cols-3 flex-shrink-0"
+            >
+              {[
+                { label: 'Courses', value: stats.length, icon: '📚', color: 'from-blue-500 to-cyan-500' },
+                { label: 'Records', value: recent.length, icon: '📋', color: 'from-emerald-500 to-blue-500' },
+                { label: 'Status', value: 'Active', icon: '✨', color: 'from-amber-500 to-orange-500' },
+              ].map((stat, i) => (
+                <motion.div
+                  key={i}
+                  whileHover={{ translateY: -8, scale: 1.05 }}
+                  className="group relative"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} rounded-2xl opacity-0 group-hover:opacity-75 blur transition-all duration-300`} />
+                  <div className="relative rounded-2xl bg-slate-900/80 backdrop-blur border border-slate-700 p-6 text-center">
+                    <div className="text-3xl mb-2">{stat.icon}</div>
+                    <p className="text-sm uppercase tracking-widest text-slate-400 font-semibold">{stat.label}</p>
+                    <p className="mt-3 text-3xl md:text-4xl font-bold text-white">{stat.value}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
-        </div>
-      )}
+        </motion.div>
 
-      {/* Overall Attendance Summary */}
-      {stats.length > 0 && (
-        <div className="mb-8">
-          {(() => {
-            const totalClasses = stats.reduce((sum, stat) => sum + stat.total_classes, 0);
-            const totalPresent = stats.reduce((sum, stat) => sum + stat.present, 0);
-            const totalAbsent = stats.reduce((sum, stat) => sum + stat.absent, 0);
-            const totalLate = stats.reduce((sum, stat) => sum + stat.late, 0);
-            const overallPercentage = totalClasses > 0 
-              ? Math.round((totalPresent / totalClasses) * 100 * 100) / 100 
-              : 0;
-
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="rounded-xl shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-6 border border-blue-200 dark:border-blue-700 col-span-1 md:col-span-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Overall Attendance</h3>
-                      <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">{overallPercentage}%</div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{totalPresent} out of {totalClasses} classes</p>
-                    </div>
-                    <div className="text-right">
-                      {overallPercentage >= 75 ? (
-                        <div className="text-4xl">✅</div>
-                      ) : overallPercentage >= 60 ? (
-                        <div className="text-4xl">⚠️</div>
-                      ) : (
-                        <div className="text-4xl">❌</div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-4 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${
-                        overallPercentage >= 75
-                          ? 'bg-green-500'
-                          : overallPercentage >= 60
-                          ? 'bg-yellow-500'
-                          : 'bg-red-500'
-                      }`}
-                      style={{ width: `${overallPercentage}%` }}
-                    />
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  className="rounded-xl shadow-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 p-6 border border-green-200 dark:border-green-700"
-                >
-                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Present</h3>
-                  <div className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{totalPresent}</div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="rounded-xl shadow-lg bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 p-6 border border-yellow-200 dark:border-yellow-700"
-                >
-                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Late</h3>
-                  <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">{totalLate}</div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="rounded-xl shadow-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 p-6 border border-red-200 dark:border-red-700"
-                >
-                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Absent</h3>
-                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{totalAbsent}</div>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 rounded-2xl border border-red-500/30 bg-gradient-to-r from-red-500/10 to-red-900/10 backdrop-blur p-6"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0">
+                <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+                  <AlertCircle className="h-6 w-6 text-red-400" />
                 </motion.div>
               </div>
-            );
-          })()}
-        </div>
-      )}
+              <div>
+                <p className="font-bold text-red-200">Something went wrong</p>
+                <p className="text-sm text-red-300 mt-1">{error}</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
-      {/* Course Attendance Stats */}
-      {stats.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Your Attendance by Course</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.course_code}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="rounded-xl shadow-lg bg-gradient-to-br from-green-50 to-white dark:from-navy-800 dark:to-navy-900 p-6 border border-green-100 dark:border-navy-700"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-bold text-lg">{stat.course_code}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{stat.course_name}</p>
-                  </div>
-                  <div className="text-right">
-                    <div
-                      className={`text-3xl font-bold ${
-                        stat.attendance_percentage >= 75
-                          ? 'text-green-600'
-                          : stat.attendance_percentage >= 60
-                          ? 'text-yellow-600'
-                          : 'text-red-600'
-                      }`}
+        {/* Course Statistics Cards */}
+        {stats.length > 0 && (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mb-8"
+            >
+              <h2 className="text-3xl font-bold text-white mb-2">Course Attendance Analytics</h2>
+              <p className="text-slate-400">Monitor your attendance performance across all enrolled courses</p>
+            </motion.div>
+
+            <motion.div
+              className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 mb-12"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.1,
+                  },
+                },
+              }}
+            >
+              {stats.map((stat, index) => (
+                <motion.div
+                  key={stat.course_code}
+                  variants={{
+                    hidden: { opacity: 0, y: 20 },
+                    visible: { opacity: 1, y: 0 },
+                  }}
+                  whileHover={{ translateY: -8 }}
+                  className="group relative overflow-hidden rounded-3xl"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 to-blue-500/0 group-hover:from-cyan-500/20 group-hover:to-blue-500/20 transition-all duration-300" />
+                  <div className="relative border border-cyan-500/20 group-hover:border-cyan-500/50 bg-gradient-to-br from-slate-900/90 to-slate-950/90 backdrop-blur p-8 shadow-xl transition-all duration-300">
+                    {/* Course Header */}
+                    <div className="flex items-start justify-between gap-4 mb-6">
+                      <div>
+                        <h3 className="text-2xl font-bold text-white group-hover:text-cyan-300 transition-colors">{stat.course_code}</h3>
+                        <p className="text-sm text-slate-400 mt-1">{stat.course_name}</p>
+                      </div>
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+                        className={`rounded-full px-4 py-2 font-bold text-sm whitespace-nowrap ${
+                          stat.attendance_percentage >= 75
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : stat.attendance_percentage >= 60
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                        }`}
+                      >
+                        {stat.attendance_percentage}%
+                      </motion.div>
+                    </div>
+
+                    {/* Pie Chart */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.2 + index * 0.1 }}
+                      className="mb-6 h-40 rounded-2xl bg-slate-800/50 p-4 border border-slate-700/50"
                     >
-                      {stat.attendance_percentage}%
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: 'Present', value: stat.present },
+                              { name: 'Late', value: stat.late },
+                              { name: 'Absent', value: stat.absent },
+                            ]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={35}
+                            outerRadius={55}
+                            paddingAngle={4}
+                            dataKey="value"
+                          >
+                            <Cell fill="#10b981" />
+                            <Cell fill="#f59e0b" />
+                            <Cell fill="#ef4444" />
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </motion.div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { label: 'Present', value: stat.present, color: 'from-emerald-500/20 to-emerald-600/20', textColor: 'text-emerald-300', icon: '✓' },
+                        { label: 'Late', value: stat.late, color: 'from-amber-500/20 to-amber-600/20', textColor: 'text-amber-300', icon: '⏱' },
+                        { label: 'Absent', value: stat.absent, color: 'from-red-500/20 to-red-600/20', textColor: 'text-red-300', icon: '✕' },
+                      ].map((item, i) => (
+                        <motion.div
+                          key={i}
+                          whileHover={{ scale: 1.05 }}
+                          className={`rounded-2xl bg-gradient-to-br ${item.color} border border-slate-600/50 p-4 text-center hover:border-slate-500 transition-colors`}
+                        >
+                          <p className="text-2xl mb-2">{item.icon}</p>
+                          <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold">{item.label}</p>
+                          <p className={`mt-2 text-2xl font-bold ${item.textColor}`}>{item.value}</p>
+                        </motion.div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </>
+        )}
 
-                {/* Pie Chart */}
-                <div className="h-32 mb-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Present', value: stat.present },
-                          { name: 'Late', value: stat.late },
-                          { name: 'Absent', value: stat.absent },
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={60}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        <Cell fill="#10b981" />
-                        <Cell fill="#f59e0b" />
-                        <Cell fill="#ef4444" />
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+        {/* Recent Attendance Records - Enhanced Table */}
+        {recent.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mb-8"
+          >
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-white mb-2">Recent Attendance Records</h2>
+              <p className="text-slate-400">Your attendance history from the last 30 days</p>
+            </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Present</div>
-                    <div className="text-lg font-bold text-green-600">{stat.present}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Late</div>
-                    <div className="text-lg font-bold text-yellow-600">{stat.late}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Absent</div>
-                    <div className="text-lg font-bold text-red-600">{stat.absent}</div>
-                  </div>
-                </div>
+            <div className="relative rounded-3xl overflow-hidden border border-cyan-500/20 bg-gradient-to-br from-slate-900/80 to-slate-950/80 shadow-2xl">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-blue-500/10 pointer-events-none" />
 
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-navy-600 text-sm text-gray-600 dark:text-gray-400">
-                  Out of {stat.total_classes} classes
-                </div>
-                {stat.total_attendance_marks !== undefined && (
-                  <div className="mt-3 p-3 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg border border-blue-200 dark:border-blue-700">
-                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Attendance Marks</div>
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stat.total_attendance_marks}</div>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent Attendance Records */}
-      {recent.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Recent Records (Last 30 days)</h2>
-          <div className="rounded-xl shadow-lg bg-gradient-to-br from-blue-50 to-white dark:from-navy-800 dark:to-navy-900 p-6 border border-blue-100 dark:border-navy-700 overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-300 dark:border-navy-600">
-                  <th className="text-left py-3 px-4 font-semibold">Date</th>
-                  <th className="text-left py-3 px-4 font-semibold">Course</th>
-                  <th className="text-center py-3 px-4 font-semibold">Status</th>
-                  <th className="text-center py-3 px-4 font-semibold">Marks</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recent.map((record, index) => (
-                  <tr
-                    key={index}
-                    className="border-b border-gray-200 dark:border-navy-700 hover:bg-gray-50 dark:hover:bg-navy-700/50"
-                  >
-                    <td className="py-3 px-4">
-                      {new Date(record.date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div>{record.course_code}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">{record.course_name}</div>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-sm font-semibold text-white ${getStatusBadgeColor(
-                          record.status
-                        )}`}
-                      >
-                        {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      {record.attendance_marks !== undefined ? (
-                        <span className="inline-block px-3 py-1 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold text-sm">
-                          {record.attendance_marks} pts
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="overflow-x-auto relative z-10"
+              >
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-cyan-500/20 bg-gradient-to-r from-slate-900/50 to-slate-800/50">
+                      <th className="px-6 py-4 text-left">
+                        <span className="text-sm font-semibold uppercase tracking-widest text-cyan-300 flex items-center gap-2">
+                          <Calendar className="w-4 h-4" /> Date
                         </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                      </th>
+                      <th className="px-6 py-4 text-left">
+                        <span className="text-sm font-semibold uppercase tracking-widest text-cyan-300 flex items-center gap-2">
+                          <BookOpen className="w-4 h-4" /> Course
+                        </span>
+                      </th>
+                      <th className="px-6 py-4 text-center">
+                        <span className="text-sm font-semibold uppercase tracking-widest text-cyan-300">Status</span>
+                      </th>
+                      <th className="px-6 py-4 text-center">
+                        <span className="text-sm font-semibold uppercase tracking-widest text-cyan-300">Marks</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <AnimatePresence>
+                      {recent.map((record, index) => (
+                        <motion.tr
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.6 + index * 0.05 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          className="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors group"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <motion.div
+                                className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center border border-cyan-500/30"
+                                whileHover={{ scale: 1.1, rotate: 5 }}
+                              >
+                                <Calendar className="w-5 h-5 text-cyan-300" />
+                              </motion.div>
+                              <span className="text-slate-200 font-medium">
+                                {new Date(record.date).toLocaleDateString('en-US', {
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                })}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div>
+                              <p className="text-white font-semibold">{record.course_code}</p>
+                              <p className="text-sm text-slate-400">{record.course_name}</p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <motion.span
+                              whileHover={{ scale: 1.1 }}
+                              className={`inline-block px-4 py-2 rounded-full text-sm font-bold border ${
+                                record.status === 'present'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                  : record.status === 'absent'
+                                  ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                                  : record.status === 'late'
+                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                  : 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                              }`}
+                            >
+                              {record.status ? record.status.toUpperCase() : 'N/A'}
+                            </motion.span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            {record.attendance_marks !== undefined ? (
+                              <motion.span
+                                whileHover={{ scale: 1.1 }}
+                                className="inline-block px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 font-bold text-sm border border-cyan-500/30"
+                              >
+                                {record.attendance_marks} pts
+                              </motion.span>
+                            ) : (
+                              <span className="text-slate-500 font-medium">—</span>
+                            )}
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                  </tbody>
+                </table>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
 
-      {stats.length === 0 && recent.length === 0 && !error && (
-        <div className="rounded-xl shadow-lg bg-gradient-to-br from-gray-50 to-white dark:from-navy-800 dark:to-navy-900 p-8 border border-gray-200 dark:border-navy-700 text-center">
-          <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-lg text-gray-600 dark:text-gray-400">No attendance records yet</p>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Your attendance will be displayed here once faculty marks it</p>
-        </div>
-      )}
+        {/* Empty State */}
+        {stats.length === 0 && recent.length === 0 && !error && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-20 rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-slate-900/50 to-slate-950/50 backdrop-blur"
+          >
+            <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity }} className="mb-6">
+              <Clock className="w-16 h-16 text-slate-500 mx-auto" />
+            </motion.div>
+            <p className="text-xl font-semibold text-slate-300">No attendance records yet</p>
+            <p className="text-slate-500 mt-2">Your attendance will be displayed here once faculty marks it</p>
+          </motion.div>
+        )}
+      </div>
     </motion.div>
   );
 };
