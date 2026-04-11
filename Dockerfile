@@ -31,6 +31,10 @@ RUN mkdir -p /etc/apt/keyrings \
     && docker-php-ext-enable sqlsrv pdo_sqlsrv \
     && rm -rf /var/lib/apt/lists/*
 
+# Fix Apache MPM conflict - disable mpm_event, enable mpm_prefork
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
+    && a2enmod mpm_prefork
+
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
@@ -43,9 +47,6 @@ COPY . /var/www/html/
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
-
-# Set environment variables for Apache
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 # Configure Apache to point to Laravel's public folder
 RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf \
