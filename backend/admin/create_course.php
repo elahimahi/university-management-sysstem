@@ -31,7 +31,25 @@ if (!isset($data['code']) || !isset($data['name'])) {
 }
 
 try {
-    error_log("CREATE_COURSE: Attempting to create course with code=" . $data['code'] . ", name=" . $data['name']);
+    $courseCode = strtoupper(preg_replace('/\s+/', ' ', trim($data['code'])));
+    $courseName = trim($data['name']);
+    error_log("CREATE_COURSE: Attempting to create course with code=" . $courseCode . ", name=" . $courseName);
+
+    if ($courseCode === '') {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Course code is required']);
+        exit;
+    }
+
+    // Prevent duplicate course codes before insert
+    $check = $pdo->prepare("SELECT COUNT(*) as count FROM courses WHERE REPLACE(LOWER(LTRIM(RTRIM(code))), ' ', '') = REPLACE(LOWER(LTRIM(RTRIM(?))), ' ', '')");
+    $check->execute([$courseCode]);
+    $exists = $check->fetch();
+    if ($exists && (int)$exists['count'] > 0) {
+        http_response_code(409);
+        echo json_encode(['status' => 'error', 'message' => 'Course code already exists']);
+        exit;
+    }
     
     $stmt = $pdo->prepare("
         INSERT INTO courses (code, name, credits, category, level, instructor_id)
@@ -39,8 +57,8 @@ try {
     ");
     
     $stmt->execute([
-        $data['code'],
-        $data['name'],
+        $courseCode,
+        $courseName,
         $data['credits'] ?? 3,
         $data['category'] ?? 'General',
         $data['level'] ?? 'Undergraduate',

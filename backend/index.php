@@ -5,18 +5,16 @@
  * This is the main entry point for the backend API.
  * It routes incoming requests to the appropriate handler based on the URL path.
  * 
- * Base URL: http://localhost/Database_Project/Database-main/Database-main/backend
+ * Base URL: http://localhost:5000
  * All endpoints return JSON responses.
  */
 
-// Enable CORS for all requests - CRITICAL ORDER
-http_response_code(200);
-header("Access-Control-Allow-Origin: *", true);
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH", true);
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Origin, Accept", true);
-header("Access-Control-Allow-Credentials: true", true);
-header("Access-Control-Max-Age: 86400", true);
-header("Content-Type: application/json; charset=UTF-8", true);
+// Enable CORS for all requests
+header("Access-Control-Allow-Origin: *"); // Allow all origins for testing purposes
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json; charset=UTF-8");
 
 // Handle preflight requests immediately
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -28,11 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
-// Strip the base path for Apache
-$basePath = '/Database_Project/university-management-sysstem/backend';
+// Strip the base path for both old Apache setup and new PHP dev server
+$basePath = '/Database_Project/Database-main/Database-main/backend';
 if (strpos($requestUri, $basePath) === 0) {
+    // Old Apache path format
     $requestUri = substr($requestUri, strlen($basePath));
-}
+} 
+// For PHP dev server, URI is already relative (like /auth/login)
+// No need to strip anything
 
 // Remove leading/trailing slashes and get the route
 $route = strtolower(trim($requestUri, '/'));
@@ -102,8 +103,6 @@ try {
             require_once 'student/get_course_assignments.php';
         } elseif ($action === 'submit-assignment' && $requestMethod === 'POST') {
             require_once 'student/submit_assignment.php';
-        } elseif ($action === 'get-fees-with-deadline' && $requestMethod === 'POST') {
-            require_once 'student/get_fees_with_deadline.php';
         }
     }
     // Courses Routes
@@ -164,16 +163,6 @@ try {
     elseif ($controller === 'admin') {
         if ($action === 'init-demo' && $requestMethod === 'POST') {
             require_once 'admin/init_demo.php';
-        } elseif ($action === 'get-all-users' && $requestMethod === 'GET') {
-            require_once 'admin/get_all_users.php';
-        } elseif ($action === 'delete-user' && $requestMethod === 'DELETE') {
-            require_once 'admin/delete_user.php';
-        } elseif ($action === 'approve-user' && $requestMethod === 'POST') {
-            require_once 'admin/approve_user.php';
-        } elseif ($action === 'reject-user' && $requestMethod === 'POST') {
-            require_once 'admin/reject_user.php';
-        } elseif ($action === 'get-pending-registrations' && $requestMethod === 'GET') {
-            require_once 'admin/get_pending_registrations.php';
         } elseif ($action === 'fees' && $requestMethod === 'GET') {
             require_once 'admin/get_fees.php';
         } elseif ($action === 'create-fee' && $requestMethod === 'POST') {
@@ -184,24 +173,6 @@ try {
             require_once 'admin/get_sms_logs.php';
         } elseif ($action === 'payments' && $requestMethod === 'GET') {
             require_once 'admin/get_payments.php';
-        } elseif ($action === 'set-payment-deadline' && $requestMethod === 'POST') {
-            require_once 'admin/set_payment_deadline.php';
-        } elseif ($action === 'apply-penalties' && $requestMethod === 'POST') {
-            require_once 'admin/apply_penalties.php';
-        } elseif ($action === 'send-deadline-reminders' && $requestMethod === 'POST') {
-            require_once 'admin/send_deadline_reminders.php';
-        } elseif ($action === 'run-fee-batch-job' && $requestMethod === 'POST') {
-            require_once 'admin/run_fee_batch_job.php';
-        } elseif ($action === 'courses' && $requestMethod === 'GET') {
-            require_once 'admin/get_all_courses.php';
-        } elseif ($action === 'create-course' && $requestMethod === 'POST') {
-            require_once 'admin/create_course.php';
-        } elseif ($action === 'update-course' && in_array($requestMethod, ['PUT', 'POST'])) {
-            require_once 'admin/update_course.php';
-        } elseif ($action === 'delete-course' && $requestMethod === 'DELETE') {
-            require_once 'admin/delete_course.php';
-        } elseif ($action === 'courses-stats' && $requestMethod === 'GET') {
-            require_once 'admin/get_courses_stats.php';
         }
     }
     // Payment Routes

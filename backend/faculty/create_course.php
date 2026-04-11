@@ -8,16 +8,25 @@ require_once __DIR__ . '/../core/db_connect.php';
 try {
     $data = json_decode(file_get_contents('php://input'), true);
 
-    if (!$data['code'] || !$data['name'] || !isset($data['instructor_id'])) {
+    $courseCode = strtoupper(preg_replace('/\s+/', ' ', trim($data['code'] ?? '')));
+    $courseName = trim($data['name'] ?? '');
+
+    if (!$courseCode || !$courseName || !isset($data['instructor_id'])) {
         http_response_code(400);
         echo json_encode(['error' => 'Required fields: code, name, instructor_id']);
         exit;
     }
 
-    // Check if course code already exists
-    $checkQuery = "SELECT id FROM courses WHERE code = ?";
+    if ($courseCode === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Course code is required']);
+        exit;
+    }
+
+    // Check if course code already exists (case-insensitive, ignoring spaces)
+    $checkQuery = "SELECT id FROM courses WHERE REPLACE(LOWER(LTRIM(RTRIM(code))), ' ', '') = REPLACE(LOWER(LTRIM(RTRIM(?))), ' ', '')";
     $checkStmt = $pdo->prepare($checkQuery);
-    $checkStmt->execute([$data['code']]);
+    $checkStmt->execute([$courseCode]);
 
     if ($checkStmt->rowCount() > 0) {
         http_response_code(409);
@@ -32,8 +41,8 @@ try {
 
     $stmt = $pdo->prepare($insertQuery);
     $result = $stmt->execute([
-        $data['code'],
-        $data['name'],
+        $courseCode,
+        $courseName,
         $data['credits'] ?? 3,
         $data['category'] ?? 'General',
         $data['level'] ?? 'Undergraduate',

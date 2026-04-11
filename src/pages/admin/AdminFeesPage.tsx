@@ -21,14 +21,13 @@ interface Fee {
   current_status: string;
   payment_count: number;
   total_paid: number;
-  payment_methods: string;
 }
 
 interface CreateFeeForm {
+  studentIds: number[];
+  description: string;
   amount: string;
-  semester: string;
   dueDate: string;
-  status: string;
 }
 
 const AdminFeesPage: React.FC = () => {
@@ -40,10 +39,10 @@ const AdminFeesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [createForm, setCreateForm] = useState<CreateFeeForm>({
+    studentIds: [],
+    description: '',
     amount: '',
-    semester: '',
     dueDate: new Date().toISOString().split('T')[0],
-    status: 'pending',
   });
   const [processing, setProcessing] = useState(false);
 
@@ -54,7 +53,7 @@ const AdminFeesPage: React.FC = () => {
     { label: 'Analytics', icon: <BarChart2 size={20} />, href: '/admin/dashboard' },
   ];
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
   useEffect(() => {
     fetchAllFees();
@@ -81,8 +80,8 @@ const AdminFeesPage: React.FC = () => {
   const handleCreateFee = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!createForm.amount || !createForm.semester || !createForm.dueDate || !createForm.status) {
-      toast.error('Please fill all required fields');
+    if (!createForm.description || !createForm.amount || !createForm.dueDate) {
+      toast.error('Please fill all fields');
       return;
     }
 
@@ -92,22 +91,21 @@ const AdminFeesPage: React.FC = () => {
       const response = await axios.post(
         `${API_BASE_URL}/admin/create-fee`,
         {
-          student_ids: null,
-          description: `Fee for ${createForm.semester}`,
+          student_ids: createForm.studentIds.length > 0 ? createForm.studentIds : null,
+          description: createForm.description,
           amount: parseFloat(createForm.amount),
           due_date: createForm.dueDate,
-          status: createForm.status,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast.success(`✓ Fee created for ${response.data.successful} student(s)`);
+      toast.success(`Fee created: ${response.data.successful} student(s)`);
       setShowCreateModal(false);
       setCreateForm({
+        studentIds: [],
+        description: '',
         amount: '',
-        semester: '',
         dueDate: new Date().toISOString().split('T')[0],
-        status: 'pending',
       });
       fetchAllFees();
     } catch (err: any) {
@@ -130,41 +128,6 @@ const AdminFeesPage: React.FC = () => {
         return 'text-red-600 bg-red-50';
       default:
         return 'text-gray-600 bg-gray-50';
-    }
-  };
-
-  const handleApplyPenalties = async () => {
-    if (window.confirm('This will apply penalties to all overdue fees. Continue?')) {
-      try {
-        const token = getAccessToken();
-        const response = await axios.post(
-          `${API_BASE_URL}/admin/apply-penalties`,
-          { send_sms: true },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        toast.success(`Penalties applied: ${response.data.penalties_count} fees`);
-        fetchAllFees();
-      } catch (err: any) {
-        console.error('Error applying penalties:', err);
-        toast.error(err.response?.data?.error || 'Failed to apply penalties');
-      }
-    }
-  };
-
-  const handleSendReminders = async () => {
-    if (window.confirm('Send payment deadline reminders to all students with pending fees (24 hours before deadline)?')) {
-      try {
-        const token = getAccessToken();
-        const response = await axios.post(
-          `${API_BASE_URL}/admin/send-deadline-reminders`,
-          { hours_before_deadline: 24, status: 'pending' },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        toast.success(`Reminders sent: ${response.data.total_reminders_sent} SMS`);
-      } catch (err: any) {
-        console.error('Error sending reminders:', err);
-        toast.error(err.response?.data?.error || 'Failed to send reminders');
-      }
     }
   };
 
@@ -225,36 +188,17 @@ const AdminFeesPage: React.FC = () => {
           className="max-w-7xl mx-auto"
         >
           <div className="flex items-center justify-between mb-6">
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <DollarSign className="w-8 h-8 text-blue-500" />
-                <h1 className="text-3xl font-bold">Fees Management</h1>
-              </div>
-              <p className="text-gray-500 dark:text-gray-300 max-w-2xl">
-                এখানে আপনি শিক্ষার্থীদের ফি, পেমেন্ট স্ট্যাটাস এবং পেনাল্টি রিমাইন্ডার ম্যানেজ করতে পারবেন।
-              </p>
+            <div className="flex items-center gap-3">
+              <DollarSign className="w-8 h-8 text-blue-500" />
+              <h1 className="text-3xl font-bold">Fees Management</h1>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleSendReminders}
-                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
-              >
-                📧 Send Reminders
-              </button>
-              <button
-                onClick={handleApplyPenalties}
-                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
-              >
-                ⚠️ Apply Penalties
-              </button>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
-              >
-                <Plus size={20} />
-                Create Fee
-              </button>
-            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-all"
+            >
+              <Plus size={20} />
+              Create Fee
+            </button>
           </div>
 
           {error && (
@@ -295,7 +239,6 @@ const AdminFeesPage: React.FC = () => {
                     <th className="text-right py-3 px-4 font-semibold">Amount</th>
                     <th className="text-left py-3 px-4 font-semibold">Due Date</th>
                     <th className="text-left py-3 px-4 font-semibold">Status</th>
-                    <th className="text-left py-3 px-4 font-semibold">Payment Method</th>
                     <th className="text-right py-3 px-4 font-semibold">Paid</th>
                   </tr>
                 </thead>
@@ -312,11 +255,10 @@ const AdminFeesPage: React.FC = () => {
                       <td className="py-3 px-4 text-right font-semibold">৳{fee.amount.toLocaleString()}</td>
                       <td className="py-3 px-4">{new Date(fee.due_date).toLocaleDateString()}</td>
                       <td className="py-3 px-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(fee.current_status || '')}`}>
-                          {fee.current_status ? fee.current_status.charAt(0).toUpperCase() + fee.current_status.slice(1) : 'N/A'}
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(fee.current_status)}`}>
+                          {fee.current_status.charAt(0).toUpperCase() + fee.current_status.slice(1)}
                         </span>
                       </td>
-                      <td className="py-3 px-4">{fee.payment_methods || 'N/A'}</td>
                       <td className="py-3 px-4 text-right font-semibold">৳{fee.total_paid?.toLocaleString() || 0}</td>
                     </tr>
                   ))}
@@ -331,18 +273,28 @@ const AdminFeesPage: React.FC = () => {
 
           {/* Create Fee Modal */}
           {showCreateModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white dark:bg-navy-800 rounded-xl shadow-2xl max-w-2xl w-full p-6 m-4"
+                className="bg-white dark:bg-navy-800 rounded-xl shadow-2xl max-w-md w-full p-6"
               >
-                <h2 className="text-2xl font-bold mb-2">Create New Fee</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">এখানে স্টুডেন্টদের জন্য নতুন ফি তৈরি করুন। Amount, semester, due date, এবং status ঠিক ভাবে নির্বাচন করুন।</p>
+                <h2 className="text-2xl font-bold mb-4">Create New Fee</h2>
 
-                <form onSubmit={handleCreateFee} className="space-y-4 max-h-[70vh] overflow-y-auto">
+                <form onSubmit={handleCreateFee} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold mb-2">Amount (৳) <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-semibold mb-2">Description</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Tuition Fee"
+                      value={createForm.description}
+                      onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Amount (৳)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -351,53 +303,28 @@ const AdminFeesPage: React.FC = () => {
                       value={createForm.amount}
                       onChange={(e) => setCreateForm({ ...createForm, amount: e.target.value })}
                       className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold mb-2">Semester <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      placeholder="e.g., Spring 2024"
-                      value={createForm.semester}
-                      onChange={(e) => setCreateForm({ ...createForm, semester: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">Date <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-semibold mb-2">Due Date</label>
                     <input
                       type="date"
                       value={createForm.dueDate}
                       onChange={(e) => setCreateForm({ ...createForm, dueDate: e.target.value })}
                       className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold mb-2">Status <span className="text-red-500">*</span></label>
-                    <select
-                      value={createForm.status}
-                      onChange={(e) => setCreateForm({ ...createForm, status: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="due">Due</option>
-                      <option value="overdue">Overdue</option>
-                      <option value="paid">Paid</option>
+                    <label className="block text-sm font-semibold mb-2">For All Students or Specific Students?</label>
+                    <select className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option>All Students</option>
+                      <option>Specific Students (Future Feature)</option>
                     </select>
                   </div>
 
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm text-blue-700 dark:text-blue-300">
-                    ✓ Fee will be created for <strong>ALL students</strong>
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => setShowCreateModal(false)}
