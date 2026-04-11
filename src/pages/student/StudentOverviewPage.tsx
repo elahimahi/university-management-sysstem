@@ -142,7 +142,7 @@ const StudentOverviewPage: React.FC = () => {
                   title="Registered Courses"
                   value={parseInt(data?.stats?.totalCourses || '0')}
                   icon={<BookOpen size={24} />}
-                  color="blue"
+                  color="navy"
                   trend={{ value: 12, isPositive: true }}
                   description="Current semester enrollment"
                 />

@@ -222,7 +222,7 @@ const FacultyReportsPageProfessional: React.FC = () => {
                   icon={<BarChart3 className="text-blue-400" size={24} />}
                   label="Total Courses"
                   value={reportData.totalCourses}
-                  color="blue"
+                  color="navy"
                   trend={12}
                 />
                 <StatCard
