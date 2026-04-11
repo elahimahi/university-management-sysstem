@@ -144,7 +144,6 @@ const StudentOverviewPage: React.FC = () => {
                   icon={<BookOpen size={24} />}
                   color="navy"
                   trend={{ value: 12, isPositive: true }}
-                  description="Current semester enrollment"
                 />
               </motion.div>
 
