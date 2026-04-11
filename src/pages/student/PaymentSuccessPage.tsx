@@ -12,11 +12,23 @@ const PaymentSuccessPage: React.FC = () => {
   const [verifying, setVerifying] = useState(true);
   const [status, setStatus] = useState<'success' | 'failed' | 'pending'>('pending');
   const [message, setMessage] = useState('');
+  const [transactionId, setTransactionId] = useState<string | null>(null);
 
   useEffect(() => {
     const verifyPayment = async () => {
-      const tranId = searchParams.get('tran_id');
-      const status = searchParams.get('status');
+      const rawTranId =
+        searchParams.get('tran_id') ||
+        searchParams.get('transaction_id') ||
+        searchParams.get('transactionId') ||
+        searchParams.get('txnid');
+      const pendingTranId = window.sessionStorage.getItem('pendingTransactionId');
+      const status =
+        searchParams.get('status') ||
+        searchParams.get('payment_status') ||
+        searchParams.get('paymentStatus') ||
+        searchParams.get('status_code');
+
+      const tranId = rawTranId || pendingTranId;
 
       if (!tranId) {
         setStatus('failed');
@@ -25,17 +37,30 @@ const PaymentSuccessPage: React.FC = () => {
         return;
       }
 
-      try {
+      setTransactionId(tranId);
+
+      const verifyAttempt = async (transactionIdToVerify: string) => {
         const token = getAccessToken();
-        const response = await axios.post(
+        return axios.post(
           `${API_BASE_URL}/payment/verify`,
-          { transaction_id: tranId },
+          { transaction_id: transactionIdToVerify, status },
           { headers: { Authorization: `Bearer ${token}` } }
         );
+      };
+
+      try {
+        let response = await verifyAttempt(tranId);
+
+        if (!response.data.success && response.data.error === 'Transaction not found' && pendingTranId && pendingTranId !== tranId) {
+          console.warn('Primary transaction ID not found, retrying with pendingTransactionId:', pendingTranId);
+          setTransactionId(pendingTranId);
+          response = await verifyAttempt(pendingTranId);
+        }
 
         if (response.data.success) {
           setStatus('success');
-          setMessage('Payment completed successfully!');
+          setMessage('✓ Payment confirmed! Your fee has been updated.');
+          window.sessionStorage.removeItem('pendingTransactionId');
         } else {
           setStatus('failed');
           setMessage(response.data.error || 'Payment verification failed');
@@ -83,7 +108,7 @@ const PaymentSuccessPage: React.FC = () => {
           <>
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h2>
-            <p className="text-gray-600 mb-6">{message}</p>
+            <p className="text-gray-600 mb-4">{message}</p>
           </>
         ) : (
           <>
@@ -91,6 +116,10 @@ const PaymentSuccessPage: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Failed</h2>
             <p className="text-gray-600 mb-6">{message}</p>
           </>
+        )}
+
+        {transactionId && (
+          <p className="text-sm text-gray-500 mb-4">Transaction ID: <span className="font-semibold text-gray-900">{transactionId}</span></p>
         )}
 
         <button
