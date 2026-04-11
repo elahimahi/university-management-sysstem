@@ -159,20 +159,16 @@ const StudentOverviewPage: React.FC = () => {
                 />
               </motion.div>
 
-              {/* Submitted Grades */}\n              <motion.div variants={itemVariants}>\n                <StatsCard\n                  title="Submitted Grades"\n                  value={parseInt(data?.stats?.submittedGrades || '0')}\n                  icon={<CheckSquare size={24} />}\n                  color="gold"\n                  trend={{ value: 8, isPositive: true }}\n                />\n              </motion.div>
-
-              {/* Outstanding Fees */}
+             {/* Submitted Grades */}
               <motion.div variants={itemVariants}>
                 <StatsCard
-                  title="Outstanding Fees"
-                  value={parseFloat(data?.stats?.pendingFees || '0')}
-                  prefix="$"
-                  icon={<CreditCard size={24} />}
-                  color="warning"
-                  trend={{ value: 3, isPositive: false }}
+                  title="Submitted Grades"
+                  value={parseInt(data?.stats?.submittedGrades || '0')}
+                  icon={<CheckSquare size={24} />}
+                  color="gold"
+                  trend={{ value: 8, isPositive: true }}
                 />
               </motion.div>
-            </motion.div>
 
             {/* Additional Info Cards */}
             <motion.div
