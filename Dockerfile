@@ -31,7 +31,7 @@ RUN mkdir -p /etc/apt/keyrings \
     && docker-php-ext-enable sqlsrv pdo_sqlsrv \
     && rm -rf /var/lib/apt/lists/*
 
-# Fix Apache MPM conflict - disable mpm_event, enable mpm_prefork
+# Fix Apache MPM conflict
 RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
     && a2enmod mpm_prefork
 
@@ -51,10 +51,6 @@ RUN chown -R www-data:www-data /var/www/html \
 # Configure Apache to point to Laravel's public folder
 RUN sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf \
     && sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/apache2.conf
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
 
 EXPOSE 80
 CMD ["apache2-foreground"]
