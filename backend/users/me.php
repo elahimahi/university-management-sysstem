@@ -41,9 +41,9 @@ try {
                 'email' => $user['email'],
                 'firstName' => $user['first_name'],
                 'lastName' => $user['last_name'],
-                'phone' => $user['phone'],
+                'phone' => $user['phone'] ?? null,
                 'role' => $user['role'],
-                'isEmailVerified' => (bool)$user['is_email_verified'],
+                'isEmailVerified' => (bool)($user['is_email_verified'] ?? false),
                 'createdAt' => $user['created_at'],
                 'updatedAt' => $user['updated_at']
             ]);
