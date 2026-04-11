@@ -11,7 +11,7 @@ export interface StatsCardProps {
     value: number;
     isPositive: boolean;
   };
-  color?: 'navy' | 'gold' | 'success' | 'warning' | 'error';
+  color?: "error" | "success" | "warning" | "navy" | "gold";
 }
 
 const StatsCard: React.FC<StatsCardProps> = ({
