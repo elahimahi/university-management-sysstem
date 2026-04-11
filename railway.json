@@ -1,0 +1,36 @@
+# Railway.app Configuration
+# This file helps Railway understand your project structure
+
+name: university-management-system
+description: Comprehensive University Management System with course enrollment, grades, and payments
+
+services:
+  backend:
+    name: Backend API
+    dockerfile: backend/Dockerfile
+    startCommand: null  # Uses Apache default
+    environmentVariables:
+      - DB_HOST
+      - DB_USER
+      - DB_PASSWORD
+      - DB_NAME
+      - DB_PORT
+      - API_PORT
+
+  database:
+    name: University Database
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environmentVariables:
+      - ACCEPT_EULA
+      - SA_PASSWORD
+      - MSSQL_PID
+
+domains:
+  - domain: ${APP_DOMAIN}
+    service: backend
+    target: 80
+
+variables:
+  ACCEPT_EULA: "Y"
+  MSSQL_PID: Express
+  APP_DOMAIN: "university-system.railway.app"
